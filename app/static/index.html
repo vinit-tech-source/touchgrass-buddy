@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TouchGrass Buddy</title>
+  <meta name="description" content="A local AI-powered outdoor activity companion." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  
+  <style>
+    /* ── DESIGN TOKENS ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --clr-bg-base:   #060d09;
+      --clr-bg-grad:   radial-gradient(circle at top, #12281a 0%, #060d09 60%);
+      --clr-surface:   rgba(10, 22, 15, 0.85);
+      --clr-elevated:  rgba(16, 35, 25, 0.9);
+      --clr-primary:   #78d67d;
+      --clr-primary-hover: #55b259;
+      --clr-accent:    #A8C49B;
+      --clr-text:      #ffffff;
+      --clr-text-dim:  #c8d6c9;
+      --clr-border:    rgba(101, 201, 106, 0.25);
+      --clr-border-high: rgba(101, 201, 106, 0.5);
+      --clr-error:     #e26d69;
+      --clr-warn:      #eab364;
+      --clr-success:   #78d67d;
+      
+      --radius-sm:     8px;
+      --radius-md:     14px;
+      --radius-lg:     24px;
+      
+      --font-sans:     'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-serif:    'Playfair Display', Georgia, serif;
+      --shadow-soft:   0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-inner:  inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      --transition:    0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background: var(--clr-bg-base); background-image: var(--clr-bg-grad); background-attachment: fixed; color: var(--clr-text); line-height: 1.6; padding-bottom: 90px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    a { color: var(--clr-primary); text-decoration: none; transition: var(--transition); }
+    a:hover { color: var(--clr-text); }
+
+    /* ── TYPOGRAPHY ── */
+    h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; line-height: 1.25; margin-bottom: 0.5em; letter-spacing: -0.01em; }
+    h1 { font-size: 2.75rem; color: var(--clr-primary); text-shadow: 0 2px 10px rgba(120, 214, 125, 0.2); }
+    h2 { font-size: 1.8rem; color: var(--clr-text); }
+    h3 { font-size: 1.3rem; color: var(--clr-text); margin-bottom: 12px; }
+    p { margin-bottom: 16px; color: var(--clr-text-dim); }
+    label { display: block; font-weight: 600; font-size: 0.9rem; color: var(--clr-text); margin-bottom: 8px; margin-top: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .help-text { font-size: 0.85rem; color: var(--clr-text-dim); margin-top: -6px; margin-bottom: 12px; display: block; font-style: italic; }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 640px; margin: 0 auto; padding: 0 20px 32px 20px; position: relative; z-index: 1; }
+    
+    /* ── COMPONENTS ── */
+    .card { background: var(--clr-surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--clr-border); border-top: 1px solid var(--clr-border-high); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05); }
+    .card-elevated { background: var(--clr-elevated); border: 1px solid var(--clr-border); border-radius: var(--radius-sm); padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+    
+    .btn { font-family: var(--font-sans); font-size: 1rem; font-weight: 600; padding: 12px 20px; border: none; border-radius: var(--radius-sm); cursor: pointer; text-align: center; transition: all var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.02em; }
+    .btn:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: 4px; }
+    .btn-primary { background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-hover)); color: #000; text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(120, 214, 125, 0.3); }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-secondary { background: rgba(255,255,255,0.03); border: 1px solid var(--clr-border-high); color: var(--clr-text); }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: var(--clr-primary); transform: translateY(-1px); }
+    .btn-danger { background: rgba(226, 109, 105, 0.1); border: 1px solid rgba(226, 109, 105, 0.4); color: var(--clr-error); }
+    .btn-danger:hover { background: rgba(226, 109, 105, 0.2); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    .input, select, textarea { font-family: var(--font-sans); font-size: 1rem; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--clr-border); background: rgba(0,0,0,0.3); color: var(--clr-text); width: 100%; transition: all var(--transition); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    .input:focus, select:focus, textarea:focus { outline: none; border-color: var(--clr-primary); background: rgba(0,0,0,0.5); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 3px rgba(120, 214, 125, 0.1); }
+    select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a996' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem; }
+    select option { background: var(--clr-bg-base); color: var(--clr-text); }
+    textarea { resize: vertical; min-height: 100px; }
+
+    /* Forms & Grid */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; gap: 4px; } }
+
+    /* Chips */
+    .chip-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .chip { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--clr-border-high); background: rgba(0,0,0,0.2); cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--clr-text-dim); transition: all 0.2s; user-select: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .chip:hover { border-color: var(--clr-primary); color: var(--clr-text); }
+    .chip.active { background: rgba(120, 214, 125, 0.15); border-color: var(--clr-primary); color: var(--clr-primary); box-shadow: 0 0 12px rgba(120, 214, 125, 0.2); }
+
+    /* Map & Location */
+    .loc-picker { position: relative; display: flex; gap: 8px; }
+    .loc-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--clr-elevated); border-radius: var(--radius-sm); border: 1px solid var(--clr-primary); z-index: 50; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 8px; backdrop-filter: blur(10px); }
+    .loc-item { padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--clr-border); font-size: 0.95rem; }
+    .loc-item:hover { background: rgba(120, 214, 125, 0.1); color: var(--clr-primary); }
+    .map-container { height: 220px; border-radius: var(--radius-sm); margin-top: 16px; border: 1px solid var(--clr-border-high); z-index: 10; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: var(--clr-text-dim); font-size: 0.9rem; overflow: hidden; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+
+    /* Status Alerts */
+    .alert { padding: 16px 20px; border-radius: var(--radius-sm); font-size: 0.95rem; margin-bottom: 20px; display: none; border: 1px solid; display: flex; align-items: center; gap: 12px; }
+    .alert-error { background: rgba(226, 109, 105, 0.1); border-color: rgba(226, 109, 105, 0.3); color: #f5b0af; }
+    .alert-warn { background: rgba(234, 179, 100, 0.1); border-color: rgba(234, 179, 100, 0.3); color: #f2cd96; }
+    .alert-info { background: rgba(120, 214, 125, 0.1); border-color: rgba(120, 214, 125, 0.3); color: var(--clr-text); border-left: 4px solid var(--clr-primary); }
+
+    /* Navigation */
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(6, 13, 9, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.3); }
+    .nav-item { color: var(--clr-text-dim); text-align: center; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; flex: 1; padding: 8px 4px; border-radius: 8px; margin: 0 4px; }
+    .nav-item:hover, .nav-item:focus-visible { color: var(--clr-text); outline: none; background: rgba(255,255,255,0.03); }
+    .nav-item.active { color: var(--clr-primary); background: rgba(120, 214, 125, 0.05); }
+    .nav-item svg { width: 24px; height: 24px; display: block; margin: 0 auto 6px; fill: currentColor; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+    /* Views */
+    .view { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .view.active { display: block; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Journal & Profile */
+    .journal-list { display: flex; flex-direction: column; gap: 16px; }
+    .journal-item { display: flex; gap: 20px; padding: 20px; position: relative; align-items: center; border: 1px solid var(--clr-border-high); border-radius: var(--radius-md); background: rgba(255,255,255,0.02); box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .journal-item:hover { transform: translateY(-2px); background: rgba(255,255,255,0.04); }
+    .j-thumb { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; background: rgba(0,0,0,0.3); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .j-info { flex: 1; min-width: 0; }
+    .j-info h4 { color: var(--clr-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.15rem; font-family: var(--font-serif); }
+    .btn-delete { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.2); border: 1px solid transparent; color: var(--clr-text-dim); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-delete:hover { background: rgba(226, 109, 105, 0.15); color: var(--clr-error); border-color: rgba(226, 109, 105, 0.3); transform: scale(1.05); }
+    
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .stat-box { background: rgba(255,255,255,0.02); padding: 24px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--clr-border-high); box-shadow: var(--shadow-inner); position: relative; overflow: hidden; }
+    .stat-box::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--clr-primary), transparent); opacity: 0.5; }
+    .stat-num { font-size: 2.5rem; font-weight: 700; color: var(--clr-primary); font-family: var(--font-serif); text-shadow: 0 2px 10px rgba(120, 214, 125, 0.2); margin-bottom: 4px; }
+    
+    .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 16px; }
+    .badge-item { text-align: center; opacity: 0.3; filter: grayscale(1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); padding: 16px 8px; border-radius: var(--radius-sm); background: rgba(0,0,0,0.2); border: 1px solid transparent; }
+    .badge-item.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--clr-border-high); background: linear-gradient(180deg, rgba(120, 214, 125, 0.1) 0%, rgba(0,0,0,0.2) 100%); transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    .badge-icon { font-size: 2.2rem; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+    .badge-label { font-size: 0.75rem; color: var(--clr-text); font-weight: 600; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Loader */
+    .loader-wrap { display: none; text-align: center; padding: 60px 0; }
+    .loader-wrap.active { display: block; animation: fadeIn 0.3s; }
+    .spinner { display: inline-block; width: 48px; height: 48px; border: 3px solid rgba(120, 214, 125, 0.2); border-top-color: var(--clr-primary); border-radius: 50%; animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; margin-bottom: 24px; box-shadow: 0 0 15px rgba(120, 214, 125, 0.2); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mission Presentation */
+    .mission-steps { list-style: none; margin: 24px 0; counter-reset: step-counter; }
+    .mission-steps li { position: relative; padding-left: 48px; margin-bottom: 20px; font-size: 1.05rem; }
+    .mission-steps li::before { content: counter(step-counter); counter-increment: step-counter; position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 50%; background: rgba(120, 214, 125, 0.1); border: 1px solid var(--clr-primary); color: var(--clr-primary); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; font-family: var(--font-serif); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    
+    .photo-box { padding: 24px; border: 2px dashed var(--clr-border-high); border-radius: var(--radius-md); text-align: center; margin: 32px 0; background: rgba(0,0,0,0.2); transition: all 0.3s; }
+    .photo-box:hover { border-color: var(--clr-primary); background: rgba(120, 214, 125, 0.02); }
+    #photoPreview { width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 16px; display: none; box-shadow: var(--shadow-soft); border: 1px solid rgba(255,255,255,0.1); }
+
+    /* Full Page Backgrounds */
+    #view-home { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.7) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/forest_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+    #view-plan, #view-mission { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/plan_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+    #view-profile { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.75) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/profile_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+    #view-about { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/about_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+    #view-journal { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/journal_bg.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HOME ==================== -->
+  <div id="view-home" class="view active">
+    
+    <div class="container" style="padding-top: 80px; text-align:center;">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="url(#primary-grad)" style="filter: drop-shadow(0 4px 12px rgba(120, 214, 125, 0.3)); margin-bottom:12px;">
+        <defs>
+          <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#78d67d" />
+            <stop offset="100%" stop-color="#55b259" />
+          </linearGradient>
+        </defs>
+        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,19.96C7.62,19.96 4.04,16.38 4.04,12C4.04,7.62 7.62,4.04 12,4.04C16.38,4.04 19.96,7.62 19.96,12C19.96,16.38 16.38,19.96 12,19.96M8.5,15.5L10,8.5L17,7L15.5,14L8.5,15.5Z" />
+      </svg>
+      <h1>TouchGrass Buddy</h1>
+      <p style="font-size: 1.15rem; color: var(--clr-text); opacity: 0.9;">Your local AI companion for outdoor excursions.</p>
+      
+      <div id="healthAlert" class="alert" style="display:block; margin: 24px auto; max-width: 400px; text-align: left;">Checking local AI status...</div>
+
+      <a href="#/plan" class="btn btn-primary" style="font-size: 1.1rem; padding: 14px 32px; margin-top: 16px; margin-bottom: 32px;">Plan a Mission</a>
+
+      <div class="card" style="text-align: left;">
+        <h3>How it works</h3>
+        <ol style="padding-left: 20px; color: var(--clr-text-dim);">
+          <li style="margin-bottom: 8px;"><strong>Location & Preferences:</strong> Share your location and tell us what you're in the mood for.</li>
+          <li style="margin-bottom: 8px;"><strong>Local Processing:</strong> Our local AI creates a safe, personalized outdoor mission.</li>
+          <li style="margin-bottom: 8px;"><strong>Verification:</strong> Complete the mission and verify it with a photo using local vision AI.</li>
+          <li><strong>Track Progress:</strong> Build streaks and earn XP stored securely on your device.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== PLAN ==================== -->
+  <div id="view-plan" class="view">
+    
+    <div class="container" style="padding-top: 60px;">
+      <h2 style="margin:0; text-shadow: 0 4px 15px rgba(0,0,0,0.8);">Plan Your Mission</h2>
+      <p style="margin-top:4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-size:1.05rem;">Tell us about your current situation to generate a tailored activity.</p>
+    
+    <div class="alert alert-error" id="planError"></div>
+
+    <div class="card">
+      <h3>1. Location</h3>
+      <div class="loc-picker">
+        <input type="text" class="input" id="locSearch" placeholder="Search city or landmark..." autocomplete="off"/>
+        <button class="btn btn-secondary" id="btnGps" title="Use current location" aria-label="Use current location">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" /></svg>
+        </button>
+        <div class="loc-dropdown" id="locDropdown"></div>
+      </div>
+      
+      <div id="map" class="map-container">Loading map...</div>
+      <p id="locLabel" style="font-size:0.85rem; color:var(--clr-primary); margin-top:8px; display:none;"></p>
+
+      <label>Search Radius for Nearby Places</label>
+      <select class="input" id="radiusSelect">
+        <option value="1">1 km (Walking)</option>
+        <option value="3" selected>3 km (Running/Cycling)</option>
+        <option value="5">5 km</option>
+        <option value="10">10 km (Driving)</option>
+        <option value="20">20 km</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h3>2. Parameters</h3>
+      <div class="form-grid">
+        <div>
+          <label>Time Available</label>
+          <select class="input" id="timeSelect">
+            <option value="5">5 min (Brief step out)</option>
+            <option value="10">10 min</option>
+            <option value="15">15 min</option>
+            <option value="20">20 min</option>
+            <option value="30" selected>30 min (Standard walk)</option>
+            <option value="45">45 min</option>
+            <option value="60">60 min (Exploration)</option>
+            <option value="90">90 min</option>
+            <option value="120">2 hours</option>
+          </select>
+        </div>
+        <div>
+          <label>Energy Level</label>
+          <select class="input" id="energySelect">
+            <option value="very low">Very Low (Minimal effort)</option>
+            <option value="low">Low (Chill)</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High (Active)</option>
+            <option value="very high">Very High (Strenuous)</option>
+          </select>
+        </div>
+        <div>
+          <label>Current Mood</label>
+          <select class="input" id="moodSelect">
+            <option value="stressed">Stressed / Anxious</option>
+            <option value="tired">Tired / Overwhelmed</option>
+            <option value="bored">Bored</option>
+            <option value="sad">Sad</option>
+            <option value="calm" selected>Calm</option>
+            <option value="happy">Happy</option>
+            <option value="curious">Curious</option>
+            <option value="motivated">Motivated / Creative</option>
+            <option value="break">In need of a break</option>
+          </select>
+        </div>
+        <div>
+          <label>Group Size</label>
+          <select class="input" id="groupSelect">
+            <option value="solo" selected>Solo</option>
+            <option value="friend">With a friend / partner</option>
+            <option value="family">With family / children</option>
+            <option value="pet">With a pet</option>
+            <option value="group">Small group</option>
+          </select>
+        </div>
+      </div>
+      
+      <label>Accessibility & Terrain</label>
+      <select class="input" id="accSelect">
+        <option value="step-free">Fully accessible / Step-free</option>
+        <option value="minimal walking">Minimal walking</option>
+        <option value="flat">Flat terrain</option>
+        <option value="moderate" selected>Moderate terrain</option>
+        <option value="uneven">Uneven terrain / Trails</option>
+        <option value="indoor">Indoor/sheltered alternative if bad weather</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h3>3. Interests</h3>
+      <span class="help-text">Select a few activities you enjoy.</span>
+      
+      <label style="margin-top:12px">Nature & Observation</label>
+      <div class="chip-container group-interests">
+        <div class="chip" data-val="birdwatching">Birdwatching</div>
+        <div class="chip" data-val="trees">Trees & Plants</div>
+        <div class="chip" data-val="sunsets">Watching Sunsets</div>
+        <div class="chip" data-val="water">Lakes/Rivers</div>
+      </div>
+
+      <label>Movement & Exploration</label>
+      <div class="chip-container group-interests">
+        <div class="chip" data-val="walking">Relaxed Walking</div>
+        <div class="chip" data-val="trails">Nature Trails</div>
+        <div class="chip" data-val="cycling">Cycling</div>
+        <div class="chip" data-val="stretching">Gentle Stretching</div>
+      </div>
+
+      <label>Creative & Mindful</label>
+      <div class="chip-container group-interests">
+        <div class="chip" data-val="photography">Photography</div>
+        <div class="chip" data-val="sketching">Sketching/Journaling</div>
+        <div class="chip" data-val="meditation">Meditation</div>
+      </div>
+      
+      <label>Custom Notes (Optional)</label>
+      <span class="help-text">Any specific requests? (e.g., "I prefer quiet places", "Avoid spending money")</span>
+      <textarea class="input" id="customNotes" placeholder="Additional preferences..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="btnGenerate" style="width:100%; padding: 14px; font-size: 1.1rem;">Generate Mission</button>
+    
+      <div class="loader-wrap" id="planLoader">
+        <div class="spinner"></div>
+        <p>Analyzing weather, scouting places, and crafting your mission...</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MISSION ==================== -->
+  <div id="view-mission" class="view">
+    <div class="container" style="padding-top: 32px;">
+      <div class="card">
+        <h2 id="mTitle" style="color:var(--clr-primary)"></h2>
+      
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.85rem; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--clr-border);">
+        <span class="chip" style="background:var(--clr-elevated)">🌡️ <span id="mTemp">--</span>°C</span>
+        <span class="chip" style="background:var(--clr-elevated)">💧 <span id="mRain">--</span>% rain</span>
+        <span class="chip" style="background:var(--clr-elevated)">⏱️ <span id="mDur">--</span> min</span>
+      </div>
+
+      <div id="missionMap" class="map-container" style="display:none; height: 160px;"></div>
+
+      <h3 style="margin-top:20px;">Your Mission:</h3>
+      <ol class="mission-steps" id="mSteps"></ol>
+
+      <div class="card-elevated" style="margin-top: 32px; border-color: var(--clr-primary); background: rgba(120, 214, 125, 0.03);">
+        <h4 style="color:var(--clr-primary); font-size:1rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">📸 Verification Challenge</h4>
+        <p id="mChallenge" style="color:var(--clr-text); font-weight:500; margin-bottom:0; font-size:1.05rem;"></p>
+      </div>
+
+      <div class="alert alert-warn" style="display:block; margin-top:16px;">
+        <strong>Safety Note:</strong> <span id="mSafety"></span>
+      </div>
+    </div>
+
+      <div class="photo-box">
+        <p style="margin-bottom:12px; font-weight:500;">Upload proof to earn XP</p>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
+        <button class="btn btn-secondary" id="btnUploadClick">Take Photo</button>
+        <img id="photoPreview" alt="Upload preview" />
+        <button class="btn btn-primary" id="btnVerify" style="display:none; width:100%; margin-top:12px;">Verify with AI</button>
+        <div id="verifyResult" class="alert" style="margin-top:16px;"></div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top: 24px;">
+        <button class="btn btn-secondary" id="btnAbandon" style="flex:1;">Abandon</button>
+        <button class="btn btn-primary" id="btnComplete" style="flex:2;">Mark Complete</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== JOURNAL ==================== -->
+  <div id="view-journal" class="view">
+    <div class="container" style="padding-top: 32px;">
+      <h2>Mission Journal</h2>
+    <p>A history of your completed outdoor excursions.</p>
+    
+    <div id="journalList" class="journal-list"></div>
+      <div id="journalEmpty" style="text-align:center; padding: 40px 0; color:var(--clr-text-dim);">
+        <img src="/static/journal_empty.jpg" alt="Empty Journal" style="width: 200px; height: 200px; object-fit: cover; border-radius: 50%; border: 4px solid var(--clr-border-high); margin-bottom: 24px; box-shadow: var(--shadow-soft); filter: sepia(0.3) brightness(0.8);" />
+        <h3 style="color:var(--clr-text);">Your journal is empty</h3>
+        <p>Time to step outside and start your first mission.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== PROFILE ==================== -->
+  <div id="view-profile" class="view">
+    
+    <div class="container" style="padding-top: 100px;">
+      <div class="card" style="text-align:center; position:relative; z-index:10; background:rgba(16, 35, 25, 0.85);">
+        <div style="font-size: 3.5rem; margin-bottom: 8px;" id="pLevelEmoji">🌱</div>
+        <h2 id="pLevelName" style="color:var(--clr-primary); margin-bottom:4px;">Level 1</h2>
+      <p>Total XP: <strong id="pXp" style="color:var(--clr-text)">0</strong></p>
+      
+      <div style="width: 100%; height: 8px; background: var(--clr-elevated); border-radius: 4px; overflow: hidden; margin-top: 16px;">
+        <div id="pXpBar" style="height: 100%; background: var(--clr-primary); width: 0%; transition: 1s ease-out;"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-num" id="pStreak">0</div>
+        <div style="font-size:0.85rem; color:var(--clr-text-dim);">Day Streak 🔥</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="pTotal">0</div>
+        <div style="font-size:0.85rem; color:var(--clr-text-dim);">Missions ✅</div>
+      </div>
+    </div>
+
+    <h3>Earned Badges</h3>
+    <div class="card">
+      <div class="badges-grid" id="badgesGrid">
+        <div class="badge-item" id="b-first" title="Complete your first mission"><div class="badge-icon">👟</div><div class="badge-label">First Steps</div></div>
+        <div class="badge-item" id="b-streak3" title="Complete missions 3 days in a row"><div class="badge-icon">🔥</div><div class="badge-label">3-Day Streak</div></div>
+        <div class="badge-item" id="b-photo" title="Successfully verify a photo challenge"><div class="badge-icon">📸</div><div class="badge-label">Photographer</div></div>
+        <div class="badge-item" id="b-rain" title="Complete a mission with >40% rain chance"><div class="badge-icon">🌧️</div><div class="badge-label">Rainy Warrior</div></div>
+        <div class="badge-item" id="b-night" title="Complete a mission at nighttime"><div class="badge-icon">🌙</div><div class="badge-label">Night Owl</div></div>
+      </div>
+    </div>
+
+      <button class="btn btn-danger" id="btnResetData" style="width:100%; margin-top:16px;">Reset Application Data</button>
+    </div>
+  </div>
+
+
+  <!-- ==================== ABOUT ==================== -->
+  <div id="view-about" class="view">
+
+    <div class="container" style="padding-top: 60px;">
+      <h2 style="margin-bottom:24px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">About</h2>
+      <div class="card" style="background:rgba(16, 35, 25, 0.85);">
+        <p><strong>TouchGrass Buddy</strong> is an open-source tool designed to help you disconnect from screens and explore the outdoors.</p>
+        <ul style="padding-left:20px; color:var(--clr-text-dim); margin-bottom:16px; font-size:0.95rem;">
+          <li style="margin-bottom:8px"><strong>Local AI:</strong> Mission text generation and photo verification are processed entirely locally on your device using Ollama. No third-party AI APIs are used.</li>
+          <li style="margin-bottom:8px"><strong>Privacy:</strong> Your preferences and photos remain on your machine.</li>
+          <li style="margin-bottom:8px"><strong>External Services:</strong> We use Open-Meteo for free weather/geocoding and OpenStreetMap (Overpass) for local park discovery. Coordinates are sent to these services.</li>
+        </ul>
+        <p style="font-size:0.85rem; color:var(--clr-text-dim);">Architecture: Python, FastAPI, HTML/JS, Leaflet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav-bar">
+    <a href="#/home" class="nav-item active" data-target="home">
+      <svg viewBox="0 0 24 24"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" /></svg>Home
+    </a>
+    <a href="#/plan" class="nav-item" data-target="plan">
+      <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" /></svg>Plan
+    </a>
+    <a href="#/journal" class="nav-item" data-target="journal">
+      <svg viewBox="0 0 24 24"><path d="M18,22H6A2,2 0 0,1 4,20V4C4,2.89 4.9,2 6,2H7V9L9.5,7.5L12,9V2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22Z" /></svg>Journal
+    </a>
+    <a href="#/profile" class="nav-item" data-target="profile">
+      <svg viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" /></svg>Profile
+    </a>
+  </nav>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  // ── STATE ──
+  let state = JSON.parse(localStorage.getItem('tgb_v3_state')) || {
+    xp: 0, streak: 0, lastPlayDate: '', missions: 0,
+    badges: { first: false, streak3: false, photo: false, rain: false, night: false },
+    journal: []
+  };
+
+  const LEVELS = [
+    { xp: 0, name: "Seedling", emoji: "🌱" },
+    { xp: 200, name: "Sprout", emoji: "🌿" },
+    { xp: 500, name: "Sapling", emoji: "🌳" },
+    { xp: 1200, name: "Mighty Oak", emoji: "🌲" },
+    { xp: 2500, name: "Forest Guardian", emoji: "👑" }
+  ];
+
+  function saveState() { localStorage.setItem('tgb_v3_state', JSON.stringify(state)); }
+
+  // ── ROUTING ──
+  function router() {
+    let hash = window.location.hash || '#/home';
+    const target = hash.replace('#/', '');
+    
+    if (!document.getElementById(`view-${target}`)) { window.location.hash = '#/home'; return; }
+    
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    document.getElementById(`view-${target}`).classList.add('active');
+    const nav = document.querySelector(`.nav-item[data-target="${target}"]`);
+    if(nav) nav.classList.add('active');
+
+    if (target === 'plan' && !map) initMap();
+    if (target === 'profile') updateProfileUI();
+    if (target === 'journal') renderJournal();
+  }
+  window.addEventListener('hashchange', router);
+
+  // ── CHIPS ──
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => c.classList.toggle('active'));
+  });
+
+  // ── HEALTH CHECK ──
+  async function checkHealth() {
+    const alertBox = document.getElementById('healthAlert');
+    try {
+      const res = await fetch('/api/health');
+      const data = await res.json();
+      if (data.model_available) {
+        alertBox.className = 'alert alert-info'; alertBox.innerHTML = `✅ <strong>Local AI Ready</strong> (${data.model_name})`;
+      } else {
+        alertBox.className = 'alert alert-warn'; alertBox.innerHTML = `⚠️ <strong>Model Missing:</strong> Run <code>ollama pull ${data.model_name}</code>`;
+      }
+    } catch {
+      alertBox.className = 'alert alert-error'; alertBox.innerHTML = `❌ <strong>Ollama Offline:</strong> Please start your local Ollama server.`;
+    }
+  }
+
+  // ── MAP & LOCATION ──
+  let map, marker, missionMapObj;
+  let currentLat = null, currentLon = null, currentPlace = "";
+
+  function initMap() {
+    try {
+      map = L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+      map.on('click', async (e) => {
+        setMapLocation(e.latlng.lat, e.latlng.lng);
+        await reverseGeocode(e.latlng.lat, e.latlng.lng);
+      });
+    } catch(e) {
+      document.getElementById('map').innerHTML = "Map failed to load. You can still search by city.";
+    }
+  }
+
+  function setMapLocation(lat, lon, zoom = 14) {
+    currentLat = lat; currentLon = lon;
+    if (map) {
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lon]).addTo(map);
+      map.setView([lat, lon], zoom);
+    }
+  }
+
+  let searchTimeout;
+  document.getElementById('locSearch').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const q = e.target.value;
+    const dd = document.getElementById('locDropdown');
+    if (q.length < 3) { dd.style.display = 'none'; return; }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+        if(!res.ok) throw new Error();
+        const data = await res.json();
+        dd.innerHTML = '';
+        if (data.results && data.results.length > 0) {
+          data.results.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'loc-item';
+            div.textContent = `${r.name}${r.admin1 ? ', '+r.admin1 : ''}${r.country ? ', '+r.country : ''}`;
+            div.onclick = () => {
+              document.getElementById('locSearch').value = '';
+              dd.style.display = 'none';
+              currentPlace = r.name;
+              document.getElementById('locLabel').style.display = 'block';
+              document.getElementById('locLabel').textContent = `✅ Selected: ${div.textContent}`;
+              setMapLocation(r.latitude, r.longitude);
+            };
+            dd.appendChild(div);
+          });
+          dd.style.display = 'block';
+        }
+      } catch (err) { dd.style.display = 'none'; }
+    }, 500);
+  });
+
+  async function reverseGeocode(lat, lon) {
+    const lbl = document.getElementById('locLabel');
+    lbl.style.display = 'block'; lbl.textContent = "📍 Identifying location...";
+    try {
+      const res = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      currentPlace = data.name;
+      lbl.textContent = `✅ Selected: ${data.display_name}`;
+    } catch (e) {
+      lbl.textContent = `✅ Selected: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+      currentPlace = "Selected Location";
+    }
+  }
+
+  document.getElementById('btnGps').addEventListener('click', () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        setMapLocation(pos.coords.latitude, pos.coords.longitude);
+        await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      }, () => alert("GPS access denied or unavailable."));
+    }
+  });
+
+  // ── MISSION GENERATION ──
+  let activeMission = null, activeBase64 = null, activeVerified = false;
+
+  document.getElementById('btnGenerate').addEventListener('click', async () => {
+    if (!currentLat || !currentLon) {
+      const err = document.getElementById('planError');
+      err.textContent = "Please select a location first using the search bar or GPS.";
+      err.style.display = 'block'; return;
+    }
+    
+    document.getElementById('planError').style.display = 'none';
+    document.getElementById('btnGenerate').style.display = 'none';
+    document.getElementById('planLoader').classList.add('active');
+
+    const payload = {
+      lat: currentLat, lon: currentLon, place_label: currentPlace || "Current Location",
+      radius_km: parseInt(document.getElementById('radiusSelect').value, 10),
+      time_min: parseInt(document.getElementById('timeSelect').value, 10),
+      energy: document.getElementById('energySelect').value,
+      mood: document.getElementById('moodSelect').value,
+      group: document.getElementById('groupSelect').value,
+      accessibility: document.getElementById('accSelect').value,
+      interests: [...document.querySelectorAll('.chip.active')].map(c => c.dataset.val),
+      custom_notes: document.getElementById('customNotes').value.trim()
+    };
+
+    try {
+      const res = await fetch('/api/mission', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error((await res.json()).detail || "Failed to generate mission");
+      activeMission = await res.json();
+      setupMissionView();
+      window.location.hash = '#/mission';
+    } catch (err) {
+      document.getElementById('planError').textContent = err.message;
+      document.getElementById('planError').style.display = 'block';
+    } finally {
+      document.getElementById('btnGenerate').style.display = 'block';
+      document.getElementById('planLoader').classList.remove('active');
+    }
+  });
+
+  function setupMissionView() {
+    activeBase64 = null; activeVerified = false;
+    document.getElementById('mTitle').textContent = activeMission.title;
+    document.getElementById('mTemp').textContent = activeMission.temperature_c;
+    document.getElementById('mRain').textContent = activeMission.rain_chance;
+    document.getElementById('mDur').textContent = activeMission.duration_min;
+    
+    const list = document.getElementById('mSteps');
+    list.innerHTML = '';
+    activeMission.steps.forEach(s => list.innerHTML += `<li>${s}</li>`);
+    
+    document.getElementById('mChallenge').textContent = activeMission.mini_challenge;
+    document.getElementById('mSafety').textContent = activeMission.safety_tip;
+
+    // Map rendering
+    const mmapEl = document.getElementById('missionMap');
+    if (activeMission.places && activeMission.places.length > 0 && typeof L !== 'undefined') {
+      mmapEl.style.display = 'block';
+      if (!missionMapObj) {
+        missionMapObj = L.map('missionMap').setView([currentLat, currentLon], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(missionMapObj);
+      }
+      missionMapObj.setView([currentLat, currentLon], 14);
+      missionMapObj.eachLayer((layer) => { if (layer instanceof L.Marker) layer.remove(); });
+      L.marker([currentLat, currentLon]).addTo(missionMapObj).bindPopup("You");
+      activeMission.places.forEach(p => { L.marker([p.lat, p.lon]).addTo(missionMapObj).bindPopup(p.name); });
+      setTimeout(() => missionMapObj.invalidateSize(), 500);
+    } else {
+      mmapEl.style.display = 'none';
+    }
+
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('verifyResult').style.display = 'none';
+    document.getElementById('btnVerify').style.display = 'none';
+    document.getElementById('btnUploadClick').style.display = 'inline-block';
+  }
+
+  // ── PHOTO VERIFICATION ──
+  document.getElementById('btnUploadClick').addEventListener('click', () => document.getElementById('photoInput').click());
+  document.getElementById('photoInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 600; let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h *= MAX/w; w = MAX; } else if (h > MAX) { w *= MAX/h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0,0,w,h);
+        activeBase64 = canvas.toDataURL('image/jpeg', 0.6); // heavily compress for localstorage
+        
+        document.getElementById('photoPreview').src = activeBase64;
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('btnUploadClick').style.display = 'none';
+        document.getElementById('btnVerify').style.display = 'inline-block';
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btnVerify').addEventListener('click', async () => {
+    if (!activeBase64) return;
+    const btn = document.getElementById('btnVerify');
+    btn.disabled = true; btn.textContent = "Analyzing...";
+    const vr = document.getElementById('verifyResult');
+    vr.style.display = 'none';
+    
+    try {
+      const res = await fetch('/api/verify', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ image_base64: activeBase64, challenge: activeMission.mini_challenge })
+      });
+      if(!res.ok) throw new Error((await res.json()).detail || "Verification failed");
+      const data = await res.json();
+      vr.style.display = 'block';
+      if (data.verified) {
+        vr.className = 'alert alert-info'; vr.innerHTML = `✅ AI says: "${data.comment}"<br><strong>+50 Bonus XP</strong>`;
+        activeVerified = true; state.xp += 50;
+      } else {
+        vr.className = 'alert alert-warn'; vr.innerHTML = `❌ AI says: "${data.comment}"<br>Try a different angle!`;
+      }
+    } catch(e) {
+      vr.style.display = 'block'; vr.className = 'alert alert-info';
+      vr.innerHTML = `⚠️ Could not reach vision model, but we trust you!<br><strong>+50 Bonus XP</strong>`;
+      activeVerified = true; state.xp += 50;
+    } finally {
+      btn.disabled = false; btn.textContent = "Verify Again";
+    }
+  });
+
+  // ── COMPLETION ──
+  document.getElementById('btnAbandon').addEventListener('click', () => window.location.hash = '#/plan');
+  
+  document.getElementById('btnComplete').addEventListener('click', () => {
+    const today = new Date().toDateString();
+    if (state.lastPlayDate !== today) { state.streak += 1; state.lastPlayDate = today; }
+    state.missions += 1;
+    state.xp += 100;
+    
+    // Badges
+    if (!state.badges.first) state.badges.first = true;
+    if (!state.badges.streak3 && state.streak >= 3) state.badges.streak3 = true;
+    if (!state.badges.photo && activeVerified) state.badges.photo = true;
+    if (!state.badges.rain && activeMission.rain_chance > 40) state.badges.rain = true;
+    if (!state.badges.night && !activeMission.is_day) state.badges.night = true;
+    
+    state.journal.unshift({
+      id: Date.now(), date: new Date().toLocaleDateString(),
+      title: activeMission.title, place: activeMission.city,
+      xp: activeVerified ? 150 : 100, thumb: activeBase64
+    });
+    if(state.journal.length > 20) state.journal.pop(); // limit size
+    
+    saveState();
+    window.location.hash = '#/profile';
+  });
+
+  // ── PROFILE & JOURNAL ──
+  function updateProfileUI() {
+    let curr = LEVELS[0], next = LEVELS[1];
+    for (let i=0; i<LEVELS.length; i++) {
+      if (state.xp >= LEVELS[i].xp) { curr = LEVELS[i]; next = LEVELS[i+1] || {xp: curr.xp + 1000}; }
+    }
+    const pct = Math.min(100, ((state.xp - curr.xp) / (next.xp - curr.xp)) * 100);
+
+    document.getElementById('pLevelEmoji').textContent = curr.emoji;
+    document.getElementById('pLevelName').textContent = curr.name;
+    document.getElementById('pXp').textContent = state.xp;
+    setTimeout(() => document.getElementById('pXpBar').style.width = pct + '%', 100);
+    
+    document.getElementById('pStreak').textContent = state.streak;
+    document.getElementById('pTotal').textContent = state.missions;
+    
+    Object.keys(state.badges).forEach(b => {
+      const el = document.getElementById(`b-${b}`);
+      if (el) el.classList.toggle('unlocked', state.badges[b]);
+    });
+  }
+
+  function renderJournal() {
+    const list = document.getElementById('journalList');
+    const empty = document.getElementById('journalEmpty');
+    if (state.journal.length === 0) {
+      list.style.display = 'none'; empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none'; list.style.display = 'flex';
+      list.innerHTML = '';
+      state.journal.forEach(j => {
+        list.innerHTML += `
+          <div class="journal-item">
+            <img class="j-thumb" src="${j.thumb || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23173323%22/></svg>'}" alt="Thumb" />
+            <div class="j-info">
+              <div style="font-size:0.75rem; color:var(--clr-text-dim); margin-bottom:2px;">${j.date} · ${j.place}</div>
+              <h4 title="${j.title}">${j.title}</h4>
+              <p style="font-weight:600; color:var(--clr-primary); margin-top:2px; margin-bottom:0; font-size:0.85rem;">+${j.xp} XP</p>
+            </div>
+            <button class="btn-delete" onclick="deleteJournal(${j.id})" title="Delete entry"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg></button>
+          </div>
+        `;
+      });
+    }
+  }
+
+  window.deleteJournal = function(id) {
+    if(confirm("Delete this mission record?")) {
+      state.journal = state.journal.filter(j => j.id !== id);
+      saveState(); renderJournal(); updateProfileUI();
+    }
+  };
+
+  document.getElementById('btnResetData').addEventListener('click', () => {
+    if(confirm("Are you absolutely sure? This will delete all XP, streaks, and journal history. This cannot be undone.")) {
+      localStorage.removeItem('tgb_v3_state'); location.reload();
+    }
+  });
+
+  // Init
+  router();
+  checkHealth();
+</script>
+</body>
+</html>
