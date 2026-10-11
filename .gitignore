@@ -28,3 +28,9 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+
+# Media & Large Binaries
+*.mp4
+*.wav
+*.mp3
+*.mov

@@ -3,835 +3,3853 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TouchGrass Buddy</title>
-  <meta name="description" content="A local AI-powered outdoor activity companion." />
+  <title>TouchGrass Buddy — Modern Outdoor Companion</title>
+  <meta name="description" content="A modern field journal and gamified outdoor excursion companion powered by local AI." />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0B120F" />
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg" />
+  <link rel="apple-touch-icon" href="/static/icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+
   <style>
-    /* ── DESIGN TOKENS ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --clr-bg-base:   #060d09;
-      --clr-bg-grad:   radial-gradient(circle at top, #12281a 0%, #060d09 60%);
-      --clr-surface:   rgba(10, 22, 15, 0.85);
-      --clr-elevated:  rgba(16, 35, 25, 0.9);
-      --clr-primary:   #78d67d;
-      --clr-primary-hover: #55b259;
-      --clr-accent:    #A8C49B;
-      --clr-text:      #ffffff;
-      --clr-text-dim:  #c8d6c9;
-      --clr-border:    rgba(101, 201, 106, 0.25);
-      --clr-border-high: rgba(101, 201, 106, 0.5);
-      --clr-error:     #e26d69;
-      --clr-warn:      #eab364;
-      --clr-success:   #78d67d;
-      
-      --radius-sm:     8px;
-      --radius-md:     14px;
-      --radius-lg:     24px;
-      
-      --font-sans:     'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-serif:    'Playfair Display', Georgia, serif;
-      --shadow-soft:   0 8px 32px rgba(0, 0, 0, 0.3);
-      --shadow-inner:  inset 0 1px 1px rgba(255, 255, 255, 0.05);
-      --transition:    0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* ── DESIGN SYSTEM: MODERN OUTDOOR FIELD JOURNAL ── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    
-    html { scroll-behavior: smooth; }
-    body { font-family: var(--font-sans); background: var(--clr-bg-base); background-image: var(--clr-bg-grad); background-attachment: fixed; color: var(--clr-text); line-height: 1.6; padding-bottom: 90px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
-    a { color: var(--clr-primary); text-decoration: none; transition: var(--transition); }
-    a:hover { color: var(--clr-text); }
 
-    /* ── TYPOGRAPHY ── */
-    h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; line-height: 1.25; margin-bottom: 0.5em; letter-spacing: -0.01em; }
-    h1 { font-size: 2.75rem; color: var(--clr-primary); text-shadow: 0 2px 10px rgba(120, 214, 125, 0.2); }
-    h2 { font-size: 1.8rem; color: var(--clr-text); }
-    h3 { font-size: 1.3rem; color: var(--clr-text); margin-bottom: 12px; }
-    p { margin-bottom: 16px; color: var(--clr-text-dim); }
-    label { display: block; font-weight: 600; font-size: 0.9rem; color: var(--clr-text); margin-bottom: 8px; margin-top: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .help-text { font-size: 0.85rem; color: var(--clr-text-dim); margin-top: -6px; margin-bottom: 12px; display: block; font-style: italic; }
+    :root {
+      /* Backgrounds: Deep forest night */
+      --bg-main:       #0B120F;
+      --bg-surface:    #141D18;
+      --bg-elevated:   #1C2620;
 
-    /* ── LAYOUT ── */
-    .container { max-width: 640px; margin: 0 auto; padding: 0 20px 32px 20px; position: relative; z-index: 1; }
-    
-    /* ── COMPONENTS ── */
-    .card { background: var(--clr-surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--clr-border); border-top: 1px solid var(--clr-border-high); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05); }
-    .card-elevated { background: var(--clr-elevated); border: 1px solid var(--clr-border); border-radius: var(--radius-sm); padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
-    
-    .btn { font-family: var(--font-sans); font-size: 1rem; font-weight: 600; padding: 12px 20px; border: none; border-radius: var(--radius-sm); cursor: pointer; text-align: center; transition: all var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.02em; }
-    .btn:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: 4px; }
-    .btn-primary { background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-hover)); color: #000; text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(120, 214, 125, 0.3); }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); }
-    .btn-secondary { background: rgba(255,255,255,0.03); border: 1px solid var(--clr-border-high); color: var(--clr-text); }
-    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: var(--clr-primary); transform: translateY(-1px); }
-    .btn-danger { background: rgba(226, 109, 105, 0.1); border: 1px solid rgba(226, 109, 105, 0.4); color: var(--clr-error); }
-    .btn-danger:hover { background: rgba(226, 109, 105, 0.2); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-    
-    .input, select, textarea { font-family: var(--font-sans); font-size: 1rem; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--clr-border); background: rgba(0,0,0,0.3); color: var(--clr-text); width: 100%; transition: all var(--transition); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
-    .input:focus, select:focus, textarea:focus { outline: none; border-color: var(--clr-primary); background: rgba(0,0,0,0.5); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 3px rgba(120, 214, 125, 0.1); }
-    select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a996' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding-right: 2.5rem; }
-    select option { background: var(--clr-bg-base); color: var(--clr-text); }
-    textarea { resize: vertical; min-height: 100px; }
+      /* Text */
+      --text-primary:  #F3F4F6;
+      --text-secondary:#9CA3AF;
+      --text-muted:    #6B7280;
 
-    /* Forms & Grid */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; gap: 4px; } }
+      /* Accents: Vibrant emerald */
+      --accent-primary:#22C55E;
+      --accent-hover:  #16A34A;
+      --accent-active: #15803D;
+      --accent-glow:   rgba(34, 197, 94, 0.2);
 
-    /* Chips */
-    .chip-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    .chip { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--clr-border-high); background: rgba(0,0,0,0.2); cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--clr-text-dim); transition: all 0.2s; user-select: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .chip:hover { border-color: var(--clr-primary); color: var(--clr-text); }
-    .chip.active { background: rgba(120, 214, 125, 0.15); border-color: var(--clr-primary); color: var(--clr-primary); box-shadow: 0 0 12px rgba(120, 214, 125, 0.2); }
+      /* Borders */
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover:  rgba(255, 255, 255, 0.2);
 
-    /* Map & Location */
-    .loc-picker { position: relative; display: flex; gap: 8px; }
-    .loc-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--clr-elevated); border-radius: var(--radius-sm); border: 1px solid var(--clr-primary); z-index: 50; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 8px; backdrop-filter: blur(10px); }
-    .loc-item { padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--clr-border); font-size: 0.95rem; }
-    .loc-item:hover { background: rgba(120, 214, 125, 0.1); color: var(--clr-primary); }
-    .map-container { height: 220px; border-radius: var(--radius-sm); margin-top: 16px; border: 1px solid var(--clr-border-high); z-index: 10; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: var(--clr-text-dim); font-size: 0.9rem; overflow: hidden; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+      /* Status */
+      --error:         #EF4444;
+      --error-bg:      rgba(239, 68, 68, 0.12);
+      --warn:          #F59E0B;
+      --warn-bg:       rgba(245, 158, 11, 0.12);
+      --success:       #22C55E;
+      --success-bg:    rgba(34, 197, 94, 0.12);
 
-    /* Status Alerts */
-    .alert { padding: 16px 20px; border-radius: var(--radius-sm); font-size: 0.95rem; margin-bottom: 20px; display: none; border: 1px solid; display: flex; align-items: center; gap: 12px; }
-    .alert-error { background: rgba(226, 109, 105, 0.1); border-color: rgba(226, 109, 105, 0.3); color: #f5b0af; }
-    .alert-warn { background: rgba(234, 179, 100, 0.1); border-color: rgba(234, 179, 100, 0.3); color: #f2cd96; }
-    .alert-info { background: rgba(120, 214, 125, 0.1); border-color: rgba(120, 214, 125, 0.3); color: var(--clr-text); border-left: 4px solid var(--clr-primary); }
+      /* Radius */
+      --radius-sm:     6px;
+      --radius:        8px;
+      --radius-lg:     16px;
 
-    /* Navigation */
-    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(6, 13, 9, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.3); }
-    .nav-item { color: var(--clr-text-dim); text-align: center; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; flex: 1; padding: 8px 4px; border-radius: 8px; margin: 0 4px; }
-    .nav-item:hover, .nav-item:focus-visible { color: var(--clr-text); outline: none; background: rgba(255,255,255,0.03); }
-    .nav-item.active { color: var(--clr-primary); background: rgba(120, 214, 125, 0.05); }
-    .nav-item svg { width: 24px; height: 24px; display: block; margin: 0 auto 6px; fill: currentColor; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+      /* Typography */
+      --font-sans:     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-serif:    'Playfair Display', Georgia, serif;
 
-    /* Views */
-    .view { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    .view.active { display: block; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+      /* Transitions */
+      --transition:    all 0.2s ease;
+    }
 
-    /* Journal & Profile */
-    .journal-list { display: flex; flex-direction: column; gap: 16px; }
-    .journal-item { display: flex; gap: 20px; padding: 20px; position: relative; align-items: center; border: 1px solid var(--clr-border-high); border-radius: var(--radius-md); background: rgba(255,255,255,0.02); box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s; }
-    .journal-item:hover { transform: translateY(-2px); background: rgba(255,255,255,0.04); }
-    .j-thumb { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; background: rgba(0,0,0,0.3); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-    .j-info { flex: 1; min-width: 0; }
-    .j-info h4 { color: var(--clr-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.15rem; font-family: var(--font-serif); }
-    .btn-delete { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.2); border: 1px solid transparent; color: var(--clr-text-dim); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .btn-delete:hover { background: rgba(226, 109, 105, 0.15); color: var(--clr-error); border-color: rgba(226, 109, 105, 0.3); transform: scale(1.05); }
-    
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
-    .stat-box { background: rgba(255,255,255,0.02); padding: 24px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--clr-border-high); box-shadow: var(--shadow-inner); position: relative; overflow: hidden; }
-    .stat-box::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--clr-primary), transparent); opacity: 0.5; }
-    .stat-num { font-size: 2.5rem; font-weight: 700; color: var(--clr-primary); font-family: var(--font-serif); text-shadow: 0 2px 10px rgba(120, 214, 125, 0.2); margin-bottom: 4px; }
-    
-    .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 16px; }
-    .badge-item { text-align: center; opacity: 0.3; filter: grayscale(1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); padding: 16px 8px; border-radius: var(--radius-sm); background: rgba(0,0,0,0.2); border: 1px solid transparent; }
-    .badge-item.unlocked { opacity: 1; filter: grayscale(0); border-color: var(--clr-border-high); background: linear-gradient(180deg, rgba(120, 214, 125, 0.1) 0%, rgba(0,0,0,0.2) 100%); transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-    .badge-icon { font-size: 2.2rem; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-    .badge-label { font-size: 0.75rem; color: var(--clr-text); font-weight: 600; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.05em; }
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* Loader */
-    .loader-wrap { display: none; text-align: center; padding: 60px 0; }
-    .loader-wrap.active { display: block; animation: fadeIn 0.3s; }
-    .spinner { display: inline-block; width: 48px; height: 48px; border: 3px solid rgba(120, 214, 125, 0.2); border-top-color: var(--clr-primary); border-radius: 50%; animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; margin-bottom: 24px; box-shadow: 0 0 15px rgba(120, 214, 125, 0.2); }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body {
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 80px; /* Mobile bottom nav cushion */
+    }
 
-    /* Mission Presentation */
-    .mission-steps { list-style: none; margin: 24px 0; counter-reset: step-counter; }
-    .mission-steps li { position: relative; padding-left: 48px; margin-bottom: 20px; font-size: 1.05rem; }
-    .mission-steps li::before { content: counter(step-counter); counter-increment: step-counter; position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 50%; background: rgba(120, 214, 125, 0.1); border: 1px solid var(--clr-primary); color: var(--clr-primary); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; font-family: var(--font-serif); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-    
-    .photo-box { padding: 24px; border: 2px dashed var(--clr-border-high); border-radius: var(--radius-md); text-align: center; margin: 32px 0; background: rgba(0,0,0,0.2); transition: all 0.3s; }
-    .photo-box:hover { border-color: var(--clr-primary); background: rgba(120, 214, 125, 0.02); }
-    #photoPreview { width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 16px; display: none; box-shadow: var(--shadow-soft); border: 1px solid rgba(255,255,255,0.1); }
+    @media (min-width: 769px) {
+      body {
+        padding-bottom: 0;
+      }
+    }
 
-    /* Full Page Backgrounds */
-    #view-home { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.7) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/forest_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
-    #view-plan, #view-mission { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/plan_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
-    #view-profile { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.75) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/profile_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
-    #view-about { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/about_hero.jpg') center/cover fixed no-repeat; min-height: 100vh; }
-    #view-journal { background: linear-gradient(to bottom, rgba(6, 13, 9, 0.8) 0%, rgba(6, 13, 9, 0.98) 100%), url('/static/journal_bg.jpg') center/cover fixed no-repeat; min-height: 100vh; }
+    /* ── TYPOGRAPHY SCALE ── */
+    h1, h2, h3, h4 {
+      color: var(--text-primary);
+      line-height: 1.25;
+      letter-spacing: -0.015em;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2.5rem, 5vw, 3.75rem);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    h3 {
+      font-family: var(--font-sans);
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    h4 {
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 16px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .help-text {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: -4px;
+      margin-bottom: 12px;
+    }
 
+    a {
+      color: var(--accent-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Focus accessibility ring */
+    :focus-visible {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: 2px;
+    }
+
+    /* ── LAYOUT & CONTAINER ── */
+    .container {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      box-sizing: border-box;
+    }
+
+    /* ── GLASSMORPHISM NAVBAR ── */
+    .top-nav-bar {
+      position: sticky;
+      top: 0;
+      background: rgba(11, 18, 15, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 32px;
+      z-index: 500;
+    }
+    .top-nav-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .brand-link:hover {
+      color: var(--accent-primary);
+    }
+    .brand-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--accent-primary);
+    }
+    .top-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .top-nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: var(--transition);
+      position: relative;
+    }
+    .top-nav-item svg {
+      width: 16px;
+      height: 16px;
+    }
+    .top-nav-item:hover {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+    .top-nav-item.active {
+      color: var(--text-primary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-weight: 600;
+    }
+    .top-nav-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 16px;
+      right: 16px;
+      height: 2px;
+      background: var(--accent-primary);
+      border-radius: 2px;
+    }
+
+    @media (max-width: 768px) {
+      .top-nav-bar {
+        padding: 12px 16px;
+      }
+      .top-nav-links {
+        display: none;
+      }
+    }
+
+    /* ── MOBILE BOTTOM NAVBAR ── */
+    .bottom-nav-bar {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .bottom-nav-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(11, 18, 15, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--border-subtle);
+        justify-content: space-around;
+        padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+        z-index: 500;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+      }
+    }
+    .bottom-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 2px;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .bottom-nav-item svg {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 2px;
+    }
+    .bottom-nav-item:hover {
+      color: var(--text-secondary);
+    }
+    .bottom-nav-item.active {
+      color: var(--accent-primary);
+      background: var(--bg-surface);
+    }
+
+    /* ── CARDS WITH HOVER DEPTH ── */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 24px;
+      transition: var(--transition);
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+      transform: translateY(-2px);
+    }
+    .card-elevated {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: var(--transition);
+    }
+
+    /* ── BUTTONS WITH MICRO-INTERACTIONS ── */
+    .btn {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 22px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .btn-primary {
+      background: var(--accent-primary);
+      color: #0B120F;
+      border-color: var(--accent-primary);
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    .btn-primary:active:not(:disabled) {
+      background: var(--accent-active);
+    }
+    .btn-secondary {
+      background: var(--bg-surface);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-elevated);
+      border-color: var(--border-hover);
+    }
+    .btn-danger {
+      background: transparent;
+      border-color: var(--error);
+      color: var(--error);
+    }
+    .btn-danger:hover {
+      background: var(--error-bg);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* ── INPUTS (48px height, focus ring) ── */
+    .input, select, textarea {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      height: 48px;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      width: 100%;
+      box-sizing: border-box;
+      transition: var(--transition);
+    }
+    .input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: 1px;
+      border-color: var(--accent-primary);
+      background: var(--bg-elevated);
+    }
+    textarea {
+      height: auto;
+      min-height: 96px;
+      resize: vertical;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1.1rem;
+      padding-right: 2.5rem;
+    }
+    select option {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+
+    /* ── INTERACTIVE CHIPS ── */
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .chip {
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+      transform: translateY(-1px);
+    }
+    .chip.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #0B120F;
+      font-weight: 600;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    /* ── ALERTS ── */
+    .alert {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      margin-bottom: 20px;
+      border: 1px solid;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      line-height: 1.5;
+    }
+    .alert svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .alert-error {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #FCA5A5;
+    }
+    .alert-warn {
+      background: var(--warn-bg);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #FDE68A;
+    }
+    .alert-info {
+      background: var(--success-bg);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--text-primary);
+    }
+
+    /* ── HERO SECTION WITH FOREST OVERLAY ── */
+    .hero-banner {
+      position: relative;
+      background: linear-gradient(to bottom, rgba(11, 18, 15, 0.72) 0%, rgba(11, 18, 15, 0.96) 100%),
+                  url('/static/forest_hero.jpg') center/cover no-repeat;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 64px 32px;
+      margin-bottom: 64px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero-status-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 24px;
+    }
+    .hero-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(11, 18, 15, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .hero-status-badge.ready {
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--text-primary);
+    }
+    .hero-status-badge.ready svg {
+      color: var(--accent-primary);
+    }
+    .hero-cta {
+      font-size: 1.15rem;
+      padding: 16px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 24px var(--accent-glow);
+      margin-top: 20px;
+    }
+
+    /* ── 3-COLUMN "HOW IT WORKS" GRID ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 24px;
+    }
+    @media (max-width: 860px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      text-align: left;
+      transition: var(--transition);
+    }
+    .feature-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+      transform: translateY(-3px);
+    }
+    .feature-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius);
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--accent-primary);
+    }
+
+    /* ── MAP & STEPPER IN PLAN VIEW ── */
+    .loc-picker {
+      position: relative;
+      display: flex;
+      gap: 10px;
+    }
+    .gps-btn {
+      height: 48px;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-weight: 600;
+      font-size: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      transition: var(--transition);
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    .gps-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    .gps-btn.locating {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    .gps-btn.locating .gps-icon {
+      animation: spinTarget 1.2s linear infinite;
+    }
+    .gps-btn.success {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+    @keyframes spinTarget {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loc-helper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .loc-helper-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .loc-helper-text svg {
+      color: var(--accent-primary);
+      flex-shrink: 0;
+    }
+    .loc-helper-text strong {
+      color: var(--accent-primary);
+    }
+    @media (max-width: 600px) {
+      .loc-picker {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gps-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    .loc-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--accent-primary);
+      z-index: 1000;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      margin-top: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .loc-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .loc-item:hover {
+      background: var(--bg-elevated);
+      color: var(--accent-primary);
+    }
+    .map-container {
+      height: 300px;
+      width: 100%;
+      border-radius: var(--radius-lg);
+      margin-top: 16px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-main);
+      position: relative;
+      overflow: hidden;
+      z-index: 5;
+    }
+    .custom-map-pin {
+      background: none;
+      border: none;
+    }
+
+    /* Plan Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+    }
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+      user-select: none;
+    }
+    .step-indicator:hover {
+      color: var(--text-secondary);
+    }
+    .step-indicator.active {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    .step-indicator.completed {
+      color: var(--accent-primary);
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .step-indicator.active .step-num {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #0B120F;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .step-indicator.completed .step-num {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border-subtle);
+      margin: 0 16px;
+      transition: var(--transition);
+    }
+    .step-line.active {
+      background: var(--accent-primary);
+    }
+    @media (max-width: 500px) {
+      .step-name {
+        display: none;
+      }
+      .stepper {
+        padding: 10px 14px;
+      }
+      .step-line {
+        margin: 0 8px;
+      }
+    }
+
+    .plan-step-pane {
+      display: none;
+    }
+    .plan-step-pane.active {
+      display: block;
+    }
+    .step-actions {
+      display: flex;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    /* ── TIMELINE JOURNAL VIEW ── */
+    .timeline {
+      position: relative;
+      margin: 32px 0 32px 20px;
+      padding-left: 28px;
+      border-left: 2px solid var(--border-subtle);
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 28px;
+    }
+    .timeline-marker {
+      position: absolute;
+      left: -37px;
+      top: 20px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      border: 3px solid var(--bg-main);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .timeline-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      transition: var(--transition);
+    }
+    .timeline-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+      transform: translateY(-2px);
+    }
+    .j-thumb {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius);
+      object-fit: cover;
+      background: var(--bg-elevated);
+      flex-shrink: 0;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ── DESTINATION SPOTS & CATEGORY TABS ── */
+    .cat-tab-btn {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cat-tab-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+    .cat-tab-btn.active {
+      background: var(--accent-primary);
+      color: #0B120F;
+      border-color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    .spot-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+    }
+    .spot-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .spot-card-img-wrap {
+      position: relative;
+      height: 140px;
+      overflow: hidden;
+      background: var(--bg-elevated);
+    }
+    .spot-card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .spot-card:hover .spot-card-img {
+      transform: scale(1.05);
+    }
+    .spot-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(11, 18, 15, 0.85);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+    }
+    .spot-card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .spot-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .spot-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 14px;
+      flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .spot-btn-maps {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--accent-primary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .spot-btn-maps:hover {
+      background: var(--accent-primary);
+      color: #0B120F;
+      border-color: var(--accent-primary);
+    }
+
+    /* ── JOURNAL & SAVED PLANS TABS ── */
+    .journal-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+    .journal-tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .journal-tab-btn.active {
+      color: var(--accent-primary);
+      border-bottom-color: var(--accent-primary);
+    }
+    .saved-plan-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+    .saved-plan-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+      transform: translateY(-2px);
+    }
+
+    /* ── DYNAMIC WEATHER BACKGROUNDS ── */
+    .weather-fx-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+      border-radius: inherit;
+    }
+    .weather-fx-rain {
+      background: linear-gradient(to bottom, rgba(11, 18, 15, 0.4), rgba(11, 18, 15, 0.8)),
+                  repeating-linear-gradient(175deg, rgba(56, 189, 248, 0) 0%, rgba(56, 189, 248, 0) 70%, rgba(56, 189, 248, 0.25) 90%, rgba(56, 189, 248, 0) 100%);
+      background-size: 100% 100%, 120px 120px;
+      animation: rainDrop 0.8s linear infinite;
+    }
+    @keyframes rainDrop {
+      0% { background-position: 0 0, 0 0; }
+      100% { background-position: 0 0, -20px 120px; }
+    }
+    .weather-fx-stars {
+      background: radial-gradient(ellipse at bottom, rgba(16, 30, 24, 0.9) 0%, rgba(11, 18, 15, 0.95) 100%),
+                  radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                  radial-gradient(2px 2px at 40px 70px, #38bdf8, rgba(0,0,0,0)),
+                  radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+                  radial-gradient(2px 2px at 160px 120px, #22c55e, rgba(0,0,0,0)),
+                  radial-gradient(1px 1px at 230px 80px, #ffffff, rgba(0,0,0,0)),
+                  radial-gradient(2px 2px at 300px 160px, #ffffff, rgba(0,0,0,0));
+      background-size: 100% 100%, 350px 350px, 300px 300px, 250px 250px, 400px 400px, 320px 320px, 450px 450px;
+      animation: twinkle 4s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.8; }
+      100% { opacity: 1; filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.4)); }
+    }
+    .weather-fx-sunny {
+      background: radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.25) 0%, rgba(34, 197, 94, 0.08) 45%, rgba(11, 18, 15, 0.85) 100%);
+      animation: sunGlow 6s ease-in-out infinite alternate;
+    }
+    @keyframes sunGlow {
+      0% { transform: scale(1); filter: brightness(1); }
+      100% { transform: scale(1.02); filter: brightness(1.15); }
+    }
+    .weather-fx-cloudy {
+      background: radial-gradient(circle at 50% 30%, rgba(156, 163, 175, 0.15) 0%, rgba(20, 29, 24, 0.7) 70%, rgba(11, 18, 15, 0.95) 100%);
+      animation: cloudDrift 10s ease-in-out infinite alternate;
+    }
+    @keyframes cloudDrift {
+      0% { opacity: 0.85; }
+      100% { opacity: 1; }
+    }
+
+    /* ── LOADING SKELETONS ── */
+    .skeleton-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(255,255,255,0.06) 50%, var(--bg-elevated) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-img {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 20px;
+      border-radius: var(--radius);
+    }
+    .skeleton-line {
+      height: 16px;
+      margin-bottom: 12px;
+    }
+    .skeleton-line.short { width: 40%; }
+    .skeleton-line.medium { width: 70%; }
+    .skeleton-line.full { width: 100%; }
+
+    /* ── FLOATING XP BADGE & CONFETTI ── */
+    .floating-xp {
+      position: fixed;
+      font-family: var(--font-sans);
+      font-size: 22px;
+      font-weight: 800;
+      color: #22C55E;
+      text-shadow: 0 0 16px rgba(34, 197, 94, 0.8);
+      pointer-events: none;
+      z-index: 10000;
+      animation: floatUpFadeOut 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      background: rgba(11, 18, 15, 0.85);
+      border: 1px solid #22C55E;
+      padding: 6px 16px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+    }
+    @keyframes floatUpFadeOut {
+      0% { opacity: 0; transform: translateY(0) scale(0.7); }
+      20% { opacity: 1; transform: translateY(-15px) scale(1.1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1); }
+    }
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── "ASK THE FOREST" NATURE CHAT WIDGET ── */
+    #forestChatBtn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 800;
+      background: var(--bg-surface);
+      border: 1px solid var(--accent-primary);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 15px var(--accent-glow);
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+    }
+    #forestChatBtn:hover {
+      background: var(--accent-primary);
+      color: #0B120F;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    @media (max-width: 768px) {
+      #forestChatBtn {
+        bottom: 90px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+    }
+    #forestChatModal {
+      position: fixed;
+      bottom: 84px;
+      right: 24px;
+      width: 380px;
+      max-width: calc(100vw - 32px);
+      height: 520px;
+      max-height: calc(100vh - 120px);
+      background: rgba(20, 29, 24, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+      z-index: 900;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .forest-chat-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+    }
+    .forest-chat-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.45;
+    }
+    .chat-bubble.bot {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+    .chat-bubble.user {
+      background: var(--accent-primary);
+      color: #0B120F;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+    .forest-chip-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: var(--transition);
+    }
+    .forest-chip-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--text-primary);
+    }
+
+    /* ── SCAVENGER HUNT CHECKLIST ── */
+    .scavenger-card {
+      background: var(--bg-elevated);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-top: 20px;
+    }
+    .scavenger-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+    }
+    .scavenger-item:last-child {
+      border-bottom: none;
+    }
+    .scavenger-item:hover {
+      padding-left: 4px;
+    }
+    .scavenger-checkbox {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+    .scavenger-item.completed .scavenger-checkbox {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #0B120F;
+    }
+    .scavenger-item.completed .scavenger-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* ── VOICE-TO-JOURNAL DICTATION ── */
+    .voice-btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+    .voice-btn:hover {
+      border-color: var(--accent-primary);
+    }
+    .voice-btn.listening {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #EF4444;
+      color: #EF4444;
+      animation: micPulse 1.2s infinite;
+    }
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+
+
+    /* ── DUOLINGO-STYLE GAMIFIED PROFILE ── */
+    .profile-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .avatar-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 2px solid var(--accent-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 0 20px var(--accent-glow);
+      color: var(--accent-primary);
+    }
+    .xp-bar-container {
+      width: 100%;
+      max-width: 440px;
+      height: 10px;
+      background: var(--bg-elevated);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 16px auto 0;
+      border: 1px solid var(--border-subtle);
+    }
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent-primary));
+      width: 0%;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* 3-Column Stats Grid */
+    .stats-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 680px) {
+      .stats-grid-3 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px 16px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .stat-card:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+      transform: translateY(-2px);
+    }
+    .stat-val {
+      font-family: var(--font-serif);
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .stat-val svg {
+      width: 24px;
+      height: 24px;
+      color: var(--accent-primary);
+    }
+
+    /* Badges as Real Achievements */
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .badge-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px 16px;
+      text-align: center;
+      position: relative;
+      transition: var(--transition);
+      cursor: default;
+    }
+    /* Locked state */
+    .badge-card.locked {
+      opacity: 0.45;
+      filter: grayscale(1);
+    }
+    /* Unlocked state */
+    .badge-card.unlocked {
+      opacity: 1;
+      filter: none;
+      border-color: rgba(34, 197, 94, 0.4);
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.08) 0%, var(--bg-surface) 100%);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .badge-card.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+      border-color: var(--accent-primary);
+    }
+    .badge-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      color: var(--accent-primary);
+    }
+    .badge-card.unlocked .badge-icon-wrap {
+      border-color: var(--accent-primary);
+      background: rgba(34, 197, 94, 0.15);
+    }
+    .badge-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .badge-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ── ACCORDION IN ABOUT VIEW ── */
+    .accordion-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .accordion-item:hover {
+      border-color: var(--border-hover);
+    }
+    .accordion-item summary {
+      padding: 20px 24px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      list-style: none;
+    }
+    .accordion-item summary::-webkit-details-marker {
+      display: none;
+    }
+    .accordion-chevron {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.2s ease;
+      color: var(--text-muted);
+    }
+    .accordion-item[open] .accordion-chevron {
+      transform: rotate(180deg);
+      color: var(--accent-primary);
+    }
+    .accordion-content {
+      padding: 0 24px 24px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── MISSION PRESENTATION ── */
+    .mission-steps {
+      list-style: none;
+      margin: 20px 0;
+      counter-reset: step-counter;
+    }
+    .mission-steps li {
+      position: relative;
+      padding-left: 48px;
+      margin-bottom: 20px;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+    .mission-steps li::before {
+      content: counter(step-counter);
+      counter-increment: step-counter;
+      position: absolute;
+      left: 0;
+      top: -2px;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      border: 1px solid var(--accent-primary);
+      color: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .photo-box {
+      padding: 28px;
+      border: 1px dashed var(--border-hover);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      margin: 24px 0;
+      background: var(--bg-surface);
+      transition: var(--transition);
+    }
+    .photo-box:hover {
+      border-color: var(--accent-primary);
+    }
+    #photoPreview {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      margin-top: 16px;
+      display: none;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ── LOADER ── */
+    .loader-wrap {
+      display: none;
+      text-align: center;
+      padding: 48px 0;
+    }
+    .loader-wrap.active {
+      display: block;
+    }
+    .spinner {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── VIEW SWITCHING ── */
+    .view {
+      display: none;
+      width: 100%;
+    }
+    .view.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
-  <!-- ==================== HOME ==================== -->
-  <div id="view-home" class="view active">
-    
-    <div class="container" style="padding-top: 80px; text-align:center;">
-      <svg width="72" height="72" viewBox="0 0 24 24" fill="url(#primary-grad)" style="filter: drop-shadow(0 4px 12px rgba(120, 214, 125, 0.3)); margin-bottom:12px;">
-        <defs>
-          <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#78d67d" />
-            <stop offset="100%" stop-color="#55b259" />
-          </linearGradient>
-        </defs>
-        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,19.96C7.62,19.96 4.04,16.38 4.04,12C4.04,7.62 7.62,4.04 12,4.04C16.38,4.04 19.96,7.62 19.96,12C19.96,16.38 16.38,19.96 12,19.96M8.5,15.5L10,8.5L17,7L15.5,14L8.5,15.5Z" />
-      </svg>
-      <h1>TouchGrass Buddy</h1>
-      <p style="font-size: 1.15rem; color: var(--clr-text); opacity: 0.9;">Your local AI companion for outdoor excursions.</p>
-      
-      <div id="healthAlert" class="alert" style="display:block; margin: 24px auto; max-width: 400px; text-align: left;">Checking local AI status...</div>
-
-      <a href="#/plan" class="btn btn-primary" style="font-size: 1.1rem; padding: 14px 32px; margin-top: 16px; margin-bottom: 32px;">Plan a Mission</a>
-
-      <div class="card" style="text-align: left;">
-        <h3>How it works</h3>
-        <ol style="padding-left: 20px; color: var(--clr-text-dim);">
-          <li style="margin-bottom: 8px;"><strong>Location & Preferences:</strong> Share your location and tell us what you're in the mood for.</li>
-          <li style="margin-bottom: 8px;"><strong>Local Processing:</strong> Our local AI creates a safe, personalized outdoor mission.</li>
-          <li style="margin-bottom: 8px;"><strong>Verification:</strong> Complete the mission and verify it with a photo using local vision AI.</li>
-          <li><strong>Track Progress:</strong> Build streaks and earn XP stored securely on your device.</li>
-        </ol>
-      </div>
+  <!-- STICKY GLASSMORPHISM TOP NAVIGATION BAR -->
+  <header class="top-nav-bar">
+    <div class="top-nav-inner">
+      <a href="#/home" class="brand-link">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+        </svg>
+        <span>TouchGrass Buddy</span>
+      </a>
+      <nav class="top-nav-links">
+        <a href="#/home" class="top-nav-item active" data-target="home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Home</span>
+        </a>
+        <a href="#/plan" class="top-nav-item" data-target="plan">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          <span>Plan</span>
+        </a>
+        <a href="#/journal" class="top-nav-item" data-target="journal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="M6 6h10"/>
+            <path d="M6 10h10"/>
+          </svg>
+          <span>Journal</span>
+        </a>
+        <a href="#/profile" class="top-nav-item" data-target="profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Profile</span>
+        </a>
+        <a href="#/about" class="top-nav-item" data-target="about">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <span>About</span>
+        </a>
+      </nav>
     </div>
-  </div>
+  </header>
 
+  <!-- ==================== HOME ==================== -->
+  <main id="view-home" class="view active">
+    <div class="container">
+      
+      <!-- HERO BANNER -->
+      <section class="hero-banner">
+        <div class="weather-fx-wrap" id="heroWeatherFx"></div>
+        <div class="hero-status-row">
+          <div class="hero-status-badge ready" id="healthBadge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <span id="healthBadgeText">Checking local AI...</span>
+          </div>
+        </div>
+
+        <h1>Reclaim the Outdoors.</h1>
+        <p style="font-size: 1.15rem; max-width: 620px; margin: 0 auto 32px; color: var(--text-primary);">
+          A private field journal and AI companion that crafts micro-adventures to disconnect from screens and recharge outside.
+        </p>
+
+        <a href="#/plan" class="btn btn-primary hero-cta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          Plan a Mission
+        </a>
+      </section>
+
+      <!-- 3-COLUMN "HOW IT WORKS" -->
+      <section style="margin-bottom: 64px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h2>How It Works</h2>
+          <p style="max-width: 580px; margin: 0 auto;">
+            AI runs locally through Ollama. Weather (Open-Meteo), places (OpenStreetMap Overpass) and map tiles are fetched online.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Card 1 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <h3>1. Set Location & Mood</h3>
+            <p>
+              Drop a pin on the interactive map or search any city. Choose your time window, energy level, and favorite interests.
+            </p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+              </svg>
+            </div>
+            <h3>2. Tailored Micro-Mission</h3>
+            <p>
+              Your local model scouts real nearby green spaces, checks live conditions, and crafts physical steps with safety notes.
+            </p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+            </div>
+            <h3>3. Verify & Level Up</h3>
+            <p>
+              Complete the outdoor photo challenge, earn streak bonus XP, and unlock achievement badges in your personal field journal.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
 
   <!-- ==================== PLAN ==================== -->
-  <div id="view-plan" class="view">
-    
-    <div class="container" style="padding-top: 60px;">
-      <h2 style="margin:0; text-shadow: 0 4px 15px rgba(0,0,0,0.8);">Plan Your Mission</h2>
-      <p style="margin-top:4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-size:1.05rem;">Tell us about your current situation to generate a tailored activity.</p>
-    
-    <div class="alert alert-error" id="planError"></div>
-
-    <div class="card">
-      <h3>1. Location</h3>
-      <div class="loc-picker">
-        <input type="text" class="input" id="locSearch" placeholder="Search city or landmark..." autocomplete="off"/>
-        <button class="btn btn-secondary" id="btnGps" title="Use current location" aria-label="Use current location">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z" /></svg>
-        </button>
-        <div class="loc-dropdown" id="locDropdown"></div>
+  <section id="view-plan" class="view">
+    <div class="container">
+      <div style="margin-bottom: 28px;">
+        <h2>Plan Your Excursion</h2>
+        <p>Three quick steps to generate your customized outdoor challenge.</p>
       </div>
-      
-      <div id="map" class="map-container">Loading map...</div>
-      <p id="locLabel" style="font-size:0.85rem; color:var(--clr-primary); margin-top:8px; display:none;"></p>
 
-      <label>Search Radius for Nearby Places</label>
-      <select class="input" id="radiusSelect">
-        <option value="1">1 km (Walking)</option>
-        <option value="3" selected>3 km (Running/Cycling)</option>
-        <option value="5">5 km</option>
-        <option value="10">10 km (Driving)</option>
-        <option value="20">20 km</option>
-      </select>
-    </div>
+      <div class="alert alert-error" id="planError" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <span id="planErrorText"></span>
+      </div>
 
-    <div class="card">
-      <h3>2. Parameters</h3>
-      <div class="form-grid">
-        <div>
-          <label>Time Available</label>
-          <select class="input" id="timeSelect">
-            <option value="5">5 min (Brief step out)</option>
-            <option value="10">10 min</option>
-            <option value="15">15 min</option>
-            <option value="20">20 min</option>
-            <option value="30" selected>30 min (Standard walk)</option>
-            <option value="45">45 min</option>
-            <option value="60">60 min (Exploration)</option>
-            <option value="90">90 min</option>
-            <option value="120">2 hours</option>
-          </select>
+      <!-- STEPPER HEADER -->
+      <div class="stepper" aria-label="Planning steps">
+        <div class="step-indicator active" id="stepIndicator1" onclick="goToPlanStep(1)" role="button" tabindex="0">
+          <span class="step-num">1</span>
+          <span class="step-name">Location</span>
         </div>
-        <div>
-          <label>Energy Level</label>
-          <select class="input" id="energySelect">
-            <option value="very low">Very Low (Minimal effort)</option>
-            <option value="low">Low (Chill)</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High (Active)</option>
-            <option value="very high">Very High (Strenuous)</option>
-          </select>
+        <div class="step-line" id="stepLine1"></div>
+        <div class="step-indicator" id="stepIndicator2" onclick="goToPlanStep(2)" role="button" tabindex="0">
+          <span class="step-num">2</span>
+          <span class="step-name">Activity</span>
         </div>
-        <div>
-          <label>Current Mood</label>
-          <select class="input" id="moodSelect">
-            <option value="stressed">Stressed / Anxious</option>
-            <option value="tired">Tired / Overwhelmed</option>
-            <option value="bored">Bored</option>
-            <option value="sad">Sad</option>
-            <option value="calm" selected>Calm</option>
-            <option value="happy">Happy</option>
-            <option value="curious">Curious</option>
-            <option value="motivated">Motivated / Creative</option>
-            <option value="break">In need of a break</option>
-          </select>
-        </div>
-        <div>
-          <label>Group Size</label>
-          <select class="input" id="groupSelect">
-            <option value="solo" selected>Solo</option>
-            <option value="friend">With a friend / partner</option>
-            <option value="family">With family / children</option>
-            <option value="pet">With a pet</option>
-            <option value="group">Small group</option>
-          </select>
+        <div class="step-line" id="stepLine2"></div>
+        <div class="step-indicator" id="stepIndicator3" onclick="goToPlanStep(3)" role="button" tabindex="0">
+          <span class="step-num">3</span>
+          <span class="step-name">Interests</span>
         </div>
       </div>
-      
-      <label>Accessibility & Terrain</label>
-      <select class="input" id="accSelect">
-        <option value="step-free">Fully accessible / Step-free</option>
-        <option value="minimal walking">Minimal walking</option>
-        <option value="flat">Flat terrain</option>
-        <option value="moderate" selected>Moderate terrain</option>
-        <option value="uneven">Uneven terrain / Trails</option>
-        <option value="indoor">Indoor/sheltered alternative if bad weather</option>
-      </select>
+
+      <!-- STEP 1 PANE: LOCATION -->
+      <div class="plan-step-pane active" id="planStep1">
+        <div class="card">
+          <h3>1. Location</h3>
+          <p style="font-size: 14px; margin-bottom: 14px; color: var(--text-secondary);">
+            Choose your starting point by searching, auto-detecting your GPS, or clicking directly on the map.
+          </p>
+          <div class="loc-picker">
+            <input type="text" class="input" id="locSearch" placeholder="Search city, park or landmark..." autocomplete="off" />
+            <button class="btn btn-secondary gps-btn" id="btnGps" type="button" title="Auto-detect your current GPS location" aria-label="Use my current GPS location">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="gps-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="22" y1="12" x2="18" y2="12"/>
+                <line x1="6" y1="12" x2="2" y2="12"/>
+                <line x1="12" y1="6" x2="12" y2="2"/>
+                <line x1="12" y1="22" x2="12" y2="18"/>
+              </svg>
+              <span id="btnGpsText">Use My Location</span>
+            </button>
+            <div class="loc-dropdown" id="locDropdown"></div>
+          </div>
+
+          <div class="loc-helper-row">
+            <span class="loc-helper-text">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              Click <strong>"Use My Location"</strong> for automatic GPS detection, or search a city above.
+            </span>
+          </div>
+
+          <div id="map" class="map-container">Loading map...</div>
+          <p id="locLabel" style="font-size: 14px; color: var(--accent-primary); margin-top: 10px; display: none;"></p>
+
+          <label for="radiusSelect">Search Radius for Nearby Places</label>
+          <select class="input" id="radiusSelect">
+            <option value="1">1 km (Walking)</option>
+            <option value="3" selected>3 km (Running, cycling)</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+          </select>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="btn btn-primary" id="btnStep1Next" style="width: 100%; height: 50px;">
+            <span>Next: Activity Settings</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2 PANE: ACTIVITY SETTINGS -->
+      <div class="plan-step-pane" id="planStep2">
+        <div class="card">
+          <h3>2. Activity Settings</h3>
+          <p style="font-size: 14px; margin-bottom: 16px;">Set your time, energy, and accessibility requirements.</p>
+          <div class="form-grid">
+            <div>
+              <label for="timeSelect">Time Available</label>
+              <select class="input" id="timeSelect">
+                <option value="5">5 min (Quick breath of air)</option>
+                <option value="10">10 min</option>
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="30" selected>30 min (Standard walk)</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min (Exploration)</option>
+                <option value="90">90 min</option>
+                <option value="120">120 min</option>
+              </select>
+            </div>
+            <div>
+              <label for="energySelect">Energy Level</label>
+              <select class="input" id="energySelect">
+                <option value="very low">Very Low (Minimal effort)</option>
+                <option value="low">Low (Relaxed)</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High (Active)</option>
+                <option value="very high">Very High (Strenuous)</option>
+              </select>
+            </div>
+            <div>
+              <label for="moodSelect">Current Mood</label>
+              <select class="input" id="moodSelect">
+                <option value="stressed">Stressed, anxious</option>
+                <option value="tired">Tired, overwhelmed</option>
+                <option value="bored">Bored</option>
+                <option value="sad">Sad</option>
+                <option value="calm" selected>Calm</option>
+                <option value="happy">Happy</option>
+                <option value="curious">Curious</option>
+                <option value="motivated">Motivated</option>
+                <option value="break">In need of a break</option>
+              </select>
+            </div>
+            <div>
+              <label for="groupSelect">Group Size</label>
+              <select class="input" id="groupSelect">
+                <option value="solo" selected>Solo</option>
+                <option value="friend">With a friend or partner</option>
+                <option value="family">With family</option>
+                <option value="pet">With a pet</option>
+                <option value="group">Small group</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="accSelect">Accessibility & Terrain</label>
+          <select class="input" id="accSelect">
+            <option value="step-free">Step-free</option>
+            <option value="minimal walking">Minimal walking</option>
+            <option value="flat">Flat terrain</option>
+            <option value="moderate" selected>Moderate terrain</option>
+            <option value="uneven">Uneven terrain, trails</option>
+            <option value="indoor">Sheltered alternative for wet weather</option>
+          </select>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="btn btn-secondary" id="btnStep2Back" style="flex: 1; height: 50px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="btnStep2Next" style="flex: 2; height: 50px;">
+            <span>Next: Interests</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3 PANE: INTERESTS & GENERATE -->
+      <div class="plan-step-pane" id="planStep3">
+        <div class="card">
+          <h3>3. Interests</h3>
+          <span class="help-text">Tap interests to guide the theme of your outing.</span>
+
+          <label style="margin-top: 8px;">Nature & Observation</label>
+          <div class="chip-container">
+            <div class="chip" data-val="birdwatching">Birdwatching</div>
+            <div class="chip" data-val="trees">Trees & plants</div>
+            <div class="chip" data-val="sunsets">Sky & sunset</div>
+            <div class="chip" data-val="water">Water & lakes</div>
+          </div>
+
+          <label>Movement</label>
+          <div class="chip-container">
+            <div class="chip" data-val="walking">Walking</div>
+            <div class="chip" data-val="trails">Nature trails</div>
+            <div class="chip" data-val="cycling">Cycling</div>
+            <div class="chip" data-val="stretching">Stretching</div>
+          </div>
+
+          <label>Creative & Mindful</label>
+          <div class="chip-container">
+            <div class="chip" data-val="photography">Photography</div>
+            <div class="chip" data-val="sketching">Sketching, notes</div>
+            <div class="chip" data-val="meditation">Meditation</div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; margin-bottom: 4px;">
+            <label for="customNotes" style="margin-bottom: 0;">Custom Notes (Optional)</label>
+            <button type="button" class="voice-btn" id="btnVoiceNotes" title="Dictate custom preferences with microphone">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+              <span id="voiceNotesLabel">Voice Dictate</span>
+            </button>
+          </div>
+          <span class="help-text">Specific requests, e.g. quiet spots, shady routes, or budget paths.</span>
+          <textarea class="input" id="customNotes" placeholder="Additional preferences..."></textarea>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="btn btn-secondary" id="btnStep3Back" style="flex: 1; height: 50px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+          </button>
+          <button class="btn btn-primary" id="btnGenerate" style="flex: 2; height: 50px;" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+            <span>Generate Mission</span>
+          </button>
+        </div>
+
+        <!-- SKELETON LOADING CARD -->
+        <div class="loader-wrap" id="planLoader">
+          <div class="skeleton-card" style="width: 100%; max-width: 620px; margin: 0 auto; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+              <div class="spinner" style="width: 22px; height: 22px; border-width: 2px; margin: 0;"></div>
+              <span style="font-weight: 600; color: var(--accent-primary); font-size: 14px;">Scouting terrain, live weather & scouting spots...</span>
+            </div>
+            <div class="skeleton-shimmer skeleton-img"></div>
+            <div class="skeleton-shimmer skeleton-line short"></div>
+            <div class="skeleton-shimmer skeleton-line full"></div>
+            <div class="skeleton-shimmer skeleton-line medium"></div>
+            <div class="skeleton-shimmer skeleton-line full" style="margin-top: 14px;"></div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div class="card">
-      <h3>3. Interests</h3>
-      <span class="help-text">Select a few activities you enjoy.</span>
-      
-      <label style="margin-top:12px">Nature & Observation</label>
-      <div class="chip-container group-interests">
-        <div class="chip" data-val="birdwatching">Birdwatching</div>
-        <div class="chip" data-val="trees">Trees & Plants</div>
-        <div class="chip" data-val="sunsets">Watching Sunsets</div>
-        <div class="chip" data-val="water">Lakes/Rivers</div>
-      </div>
-
-      <label>Movement & Exploration</label>
-      <div class="chip-container group-interests">
-        <div class="chip" data-val="walking">Relaxed Walking</div>
-        <div class="chip" data-val="trails">Nature Trails</div>
-        <div class="chip" data-val="cycling">Cycling</div>
-        <div class="chip" data-val="stretching">Gentle Stretching</div>
-      </div>
-
-      <label>Creative & Mindful</label>
-      <div class="chip-container group-interests">
-        <div class="chip" data-val="photography">Photography</div>
-        <div class="chip" data-val="sketching">Sketching/Journaling</div>
-        <div class="chip" data-val="meditation">Meditation</div>
-      </div>
-      
-      <label>Custom Notes (Optional)</label>
-      <span class="help-text">Any specific requests? (e.g., "I prefer quiet places", "Avoid spending money")</span>
-      <textarea class="input" id="customNotes" placeholder="Additional preferences..."></textarea>
-    </div>
-
-    <button class="btn btn-primary" id="btnGenerate" style="width:100%; padding: 14px; font-size: 1.1rem;">Generate Mission</button>
-    
-      <div class="loader-wrap" id="planLoader">
-        <div class="spinner"></div>
-        <p>Analyzing weather, scouting places, and crafting your mission...</p>
-      </div>
-    </div>
-  </div>
+  </section>
 
 
   <!-- ==================== MISSION ==================== -->
-  <div id="view-mission" class="view">
-    <div class="container" style="padding-top: 32px;">
+  <section id="view-mission" class="view">
+    <div class="container">
       <div class="card">
-        <h2 id="mTitle" style="color:var(--clr-primary)"></h2>
-      
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.85rem; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--clr-border);">
-        <span class="chip" style="background:var(--clr-elevated)">🌡️ <span id="mTemp">--</span>°C</span>
-        <span class="chip" style="background:var(--clr-elevated)">💧 <span id="mRain">--</span>% rain</span>
-        <span class="chip" style="background:var(--clr-elevated)">⏱️ <span id="mDur">--</span> min</span>
+        
+        <!-- Header with Title & Bookmark -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 8px;">
+          <h2 id="mTitle" style="color: var(--text-primary); margin-bottom: 0;"></h2>
+          <button id="btnSaveMission" class="btn btn-secondary" style="padding: 8px 14px; font-size: 13px; flex-shrink: 0;" title="Save plan to your Journal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span id="saveMissionText">Plan Saved</span>
+          </button>
+        </div>
+
+        <!-- Chips Row -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
+          <span class="chip" style="cursor: default; background: var(--bg-elevated);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+            </svg>
+            <span id="mTemp">--</span>°C
+          </span>
+          <span class="chip" style="cursor: default; background: var(--bg-elevated);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+            </svg>
+            <span id="mRain">--</span>% rain
+          </span>
+          <span class="chip" style="cursor: default; background: var(--bg-elevated);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="mDur">--</span> min
+          </span>
+          <span class="chip" id="mCityChip" style="cursor: default; background: var(--bg-elevated);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span id="mCity">Location</span>
+          </span>
+        </div>
+
+        <!-- FEATURED BEST DESTINATION CARD -->
+        <div id="mDestCard" style="display: none; margin-bottom: 28px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid rgba(34, 197, 94, 0.35); background: var(--bg-surface); box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+          <div style="position: relative; height: 260px; overflow: hidden; background: #0B120F;">
+            <img id="mDestImg" src="" alt="Best Destination Photo" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+            <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,18,15,0.15) 0%, rgba(11,18,15,0.85) 100%);"></div>
+            
+            <div style="position: absolute; top: 16px; left: 16px; display: flex; gap: 8px;">
+              <span id="mDestCategoryBadge" style="padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(11,18,15,0.85); backdrop-filter: blur(8px); border: 1px solid var(--accent-primary); color: var(--accent-primary);">
+                ⭐ Best Destination
+              </span>
+            </div>
+
+            <div style="position: absolute; bottom: 18px; left: 20px; right: 20px;">
+              <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--accent-primary); letter-spacing: 1px; margin-bottom: 4px;">Top Recommended Spot</div>
+              <h3 id="mDestName" style="color: #F3F4F6; font-size: 1.6rem; margin-bottom: 6px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); line-height: 1.2;"></h3>
+              <p id="mDestDesc" style="color: #D1D5DB; font-size: 0.9rem; margin-bottom: 12px; max-width: 650px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"></p>
+              
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <a id="mDestMapsBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding: 9px 18px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                  </svg>
+                  Get Directions in Google Maps
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Map -->
+        <div id="missionMap" class="map-container" style="display: none; height: 260px; margin-bottom: 24px;"></div>
+
+        <!-- Action Steps -->
+        <h3 style="margin-top: 16px;">Action Steps</h3>
+        <ol class="mission-steps" id="mSteps"></ol>
+
+        <!-- Verification Challenge -->
+        <div class="card-elevated" style="margin-top: 24px; border-color: rgba(34, 197, 94, 0.3);">
+          <h4 style="display: flex; align-items: center; gap: 8px; color: var(--accent-primary); text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+            Verification Challenge
+          </h4>
+          <p id="mChallenge" style="color: var(--text-primary); font-weight: 500; margin-bottom: 0; font-size: 1.05rem; margin-top: 6px;"></p>
+        </div>
+
+        <!-- Nature Scavenger Hunt Checklist -->
+        <div id="mScavengerCard" class="scavenger-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h4 style="display: flex; align-items: center; gap: 8px; color: var(--accent-primary); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a9 9 0 0 1 9 9c0 4.97-4.03 9-9 9A9 9 0 0 1 3 11C3 6.03 7.03 2 12 2z"/>
+                <path d="M12 7v5l3 3"/>
+              </svg>
+              Nature Scavenger Hunt (+15 XP each)
+            </h4>
+            <span id="scavengerProgress" style="font-size: 12px; font-weight: 700; color: var(--accent-primary);">0/3 found</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Discover these natural items on your excursion and check them off:</p>
+          <div id="mScavengerList"></div>
+        </div>
+
+        <div class="alert alert-warn" style="display: flex; margin-top: 16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div>
+            <strong>Safety tip:</strong> <span id="mSafety"></span>
+          </div>
+        </div>
+
+        <!-- CATEGORIZED SPOTS SECTION: CAFE, MOUNTAIN, TEMPLE, FORT, PARK -->
+        <div id="mSpotsSection" style="margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border-subtle);">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 20px;">
+            <div>
+              <h3 style="font-size: 1.35rem; margin-bottom: 4px;">Recommended Nearby Spots</h3>
+              <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Explore cafes, mountains, temples, forts, and parks near you.</p>
+            </div>
+            <!-- Category Tabs -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="cat-tab-btn active" data-cat="all" onclick="filterSpotsCategory('all')">All Spots</button>
+              <button class="cat-tab-btn" data-cat="cafe" onclick="filterSpotsCategory('cafe')">☕ Cafes</button>
+              <button class="cat-tab-btn" data-cat="mountain" onclick="filterSpotsCategory('mountain')">⛰️ Mountains</button>
+              <button class="cat-tab-btn" data-cat="temple" onclick="filterSpotsCategory('temple')">🛕 Temples</button>
+              <button class="cat-tab-btn" data-cat="fort" onclick="filterSpotsCategory('fort')">🏰 Forts</button>
+              <button class="cat-tab-btn" data-cat="park" onclick="filterSpotsCategory('park')">🌳 Parks</button>
+            </div>
+          </div>
+
+          <!-- Spot Cards Grid -->
+          <div id="mSpotsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+            <!-- Populated via setupMissionView() -->
+          </div>
+        </div>
+
       </div>
 
-      <div id="missionMap" class="map-container" style="display:none; height: 160px;"></div>
-
-      <h3 style="margin-top:20px;">Your Mission:</h3>
-      <ol class="mission-steps" id="mSteps"></ol>
-
-      <div class="card-elevated" style="margin-top: 32px; border-color: var(--clr-primary); background: rgba(120, 214, 125, 0.03);">
-        <h4 style="color:var(--clr-primary); font-size:1rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">📸 Verification Challenge</h4>
-        <p id="mChallenge" style="color:var(--clr-text); font-weight:500; margin-bottom:0; font-size:1.05rem;"></p>
-      </div>
-
-      <div class="alert alert-warn" style="display:block; margin-top:16px;">
-        <strong>Safety Note:</strong> <span id="mSafety"></span>
-      </div>
-    </div>
-
+      <!-- Photo Upload Box -->
       <div class="photo-box">
-        <p style="margin-bottom:12px; font-weight:500;">Upload proof to earn XP</p>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
-        <button class="btn btn-secondary" id="btnUploadClick">Take Photo</button>
+        <h4 style="margin-bottom: 8px;">Upload Photo Challenge</h4>
+        <p style="margin-bottom: 16px; font-size: 14px;">Snap a photo completing the challenge to earn +50 bonus XP.</p>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;" />
+        <button class="btn btn-secondary" id="btnUploadClick" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+          Take Photo
+        </button>
         <img id="photoPreview" alt="Upload preview" />
-        <button class="btn btn-primary" id="btnVerify" style="display:none; width:100%; margin-top:12px;">Verify with AI</button>
-        <div id="verifyResult" class="alert" style="margin-top:16px;"></div>
+        <button class="btn btn-primary" id="btnVerify" type="button" style="display: none; width: 100%; margin-top: 14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          Verify with AI
+        </button>
+        <div id="verifyResult" class="alert" style="display: none; margin-top: 16px;"></div>
       </div>
 
-      <div style="display:flex; gap:12px; margin-top: 24px;">
-        <button class="btn btn-secondary" id="btnAbandon" style="flex:1;">Abandon</button>
-        <button class="btn btn-primary" id="btnComplete" style="flex:2;">Mark Complete</button>
+      <!-- Excursion Reflection Note -->
+      <div class="card" style="margin-top: 20px; padding: 18px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label for="missionReflection" style="font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary);">Field Reflection (Optional)</label>
+          <button type="button" class="voice-btn" id="btnVoiceReflection" title="Dictate field reflection note">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+            <span id="voiceReflectionLabel">Voice Dictate</span>
+          </button>
+        </div>
+        <input type="text" class="input" id="missionReflection" placeholder="Record what you felt, saw, heard, or discovered..." style="height: 44px; font-size: 14px;" />
+      </div>
+
+      <div style="display: flex; gap: 14px; margin-top: 24px;">
+        <button class="btn btn-secondary" id="btnAbandon" style="flex: 1;" type="button">Back to Plan</button>
+        <button class="btn btn-primary" id="btnComplete" style="flex: 2;" type="button">Mark Complete</button>
       </div>
     </div>
-  </div>
+  </section>
 
-
-  <!-- ==================== JOURNAL ==================== -->
-  <div id="view-journal" class="view">
-    <div class="container" style="padding-top: 32px;">
-      <h2>Mission Journal</h2>
-    <p>A history of your completed outdoor excursions.</p>
-    
-    <div id="journalList" class="journal-list"></div>
-      <div id="journalEmpty" style="text-align:center; padding: 40px 0; color:var(--clr-text-dim);">
-        <img src="/static/journal_empty.jpg" alt="Empty Journal" style="width: 200px; height: 200px; object-fit: cover; border-radius: 50%; border: 4px solid var(--clr-border-high); margin-bottom: 24px; box-shadow: var(--shadow-soft); filter: sepia(0.3) brightness(0.8);" />
-        <h3 style="color:var(--clr-text);">Your journal is empty</h3>
-        <p>Time to step outside and start your first mission.</p>
+  <!-- ==================== JOURNAL & SAVED PLANS ==================== -->
+  <section id="view-journal" class="view">
+    <div class="container">
+      <div style="margin-bottom: 24px;">
+        <h2>Field Journal & Plans</h2>
+        <p>Browse your previous generated plans and past completed excursions.</p>
       </div>
+
+      <!-- Tab Switcher: Saved Plans vs Completed Excursions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+        <button id="tabSavedPlans" class="journal-tab-btn active" onclick="switchJournalTab('plans')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+          Saved Plans (<span id="savedPlansCount">0</span>)
+        </button>
+        <button id="tabCompletedExcursions" class="journal-tab-btn" onclick="switchJournalTab('excursions')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          Completed Excursions (<span id="completedCount">0</span>)
+        </button>
+      </div>
+
+      <!-- SAVED PLANS PANE -->
+      <div id="journalPlansPane">
+        <div id="savedPlansList"></div>
+        <div id="savedPlansEmpty" class="card" style="display: none; text-align: center; padding: 64px 24px;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--accent-primary);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 8px;">No saved plans yet</h3>
+          <p style="max-width: 420px; margin: 0 auto 24px;">
+            Every plan you generate will automatically be saved here so you can revisit, follow, and explore it anytime.
+          </p>
+          <a href="#/plan" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+            </svg>
+            Generate a Mission Plan
+          </a>
+        </div>
+      </div>
+
+      <!-- COMPLETED EXCURSIONS PANE -->
+      <div id="journalExcursionsPane" style="display: none;">
+        <div id="journalTimelineWrap" style="display: none;">
+          <div class="timeline" id="journalTimeline"></div>
+        </div>
+
+        <div id="journalEmpty" class="card" style="text-align: center; padding: 64px 24px;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--accent-primary);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+              <path d="M6 6h10"/>
+              <path d="M6 10h10"/>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 8px;">No completed excursions yet</h3>
+          <p style="max-width: 420px; margin: 0 auto 24px;">
+            Complete an outdoor mission and upload your challenge photo to log your journey.
+          </p>
+          <a href="#/plan" class="btn btn-primary">
+            Plan Your First Mission
+          </a>
+        </div>
+      </div>
+
     </div>
-  </div>
+  </section>
 
 
-  <!-- ==================== PROFILE ==================== -->
-  <div id="view-profile" class="view">
-    
-    <div class="container" style="padding-top: 100px;">
-      <div class="card" style="text-align:center; position:relative; z-index:10; background:rgba(16, 35, 25, 0.85);">
-        <div style="font-size: 3.5rem; margin-bottom: 8px;" id="pLevelEmoji">🌱</div>
-        <h2 id="pLevelName" style="color:var(--clr-primary); margin-bottom:4px;">Level 1</h2>
-      <p>Total XP: <strong id="pXp" style="color:var(--clr-text)">0</strong></p>
+  <!-- ==================== PROFILE (DUOLINGO MEETS ALLTRAILS) ==================== -->
+  <section id="view-profile" class="view">
+    <div class="container">
       
-      <div style="width: 100%; height: 8px; background: var(--clr-elevated); border-radius: 4px; overflow: hidden; margin-top: 16px;">
-        <div id="pXpBar" style="height: 100%; background: var(--clr-primary); width: 0%; transition: 1s ease-out;"></div>
+      <!-- LEVEL AVATAR CARD -->
+      <div class="profile-card">
+        <div class="avatar-wrap" id="pAvatarIcon">
+          <!-- Level Icon SVG -->
+        </div>
+        <h2 id="pLevelName" style="margin-bottom: 4px;">Level 1: Seedling</h2>
+        <p style="margin-bottom: 8px;">Total Experience: <strong id="pXp" style="color: var(--accent-primary);">0</strong> XP</p>
+
+        <div class="xp-bar-container">
+          <div class="xp-bar-fill" id="pXpBar"></div>
+        </div>
+      </div>
+
+      <!-- 3-COLUMN STATS GRID -->
+      <div class="stats-grid-3">
+        <div class="stat-card">
+          <div class="stat-val">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+            <span id="pStreak">0</span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Day Streak</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-val">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <span id="pTotal">0</span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Missions Completed</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-val">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <span id="pTotalXpStat">0</span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total Earned XP</div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS & BADGES -->
+      <div style="margin-bottom: 24px;">
+        <h2>Achievements</h2>
+        <p>Unlock badges by discovering parks, braving weather, and maintaining streaks.</p>
+      </div>
+
+      <div class="badges-grid">
+        <!-- Badge 1 -->
+        <div class="badge-card locked" id="b-first" title="Complete your first outdoor mission">
+          <div class="badge-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 14 14"/>
+            </svg>
+          </div>
+          <div class="badge-title">First Steps</div>
+          <div class="badge-desc">Complete your first outdoor excursion</div>
+        </div>
+
+        <!-- Badge 2 -->
+        <div class="badge-card locked" id="b-streak3" title="Complete missions 3 days in a row">
+          <div class="badge-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+          </div>
+          <div class="badge-title">3-Day Streak</div>
+          <div class="badge-desc">Build momentum three days in a row</div>
+        </div>
+
+        <!-- Badge 3 -->
+        <div class="badge-card locked" id="b-photo" title="Verify a challenge photo with local AI">
+          <div class="badge-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+          </div>
+          <div class="badge-title">Photographer</div>
+          <div class="badge-desc">Successfully verify a photo challenge</div>
+        </div>
+
+        <!-- Badge 4 -->
+        <div class="badge-card locked" id="b-rain" title="Complete a mission with precipitation forecast">
+          <div class="badge-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+              <path d="M16 14v6"/>
+              <path d="M8 14v6"/>
+              <path d="M12 16v6"/>
+            </svg>
+          </div>
+          <div class="badge-title">Rainy Warrior</div>
+          <div class="badge-desc">Embrace the elements during rain forecast</div>
+        </div>
+
+        <!-- Badge 5 -->
+        <div class="badge-card locked" id="b-night" title="Complete a mission after sunset">
+          <div class="badge-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+          </div>
+          <div class="badge-title">Night Owl</div>
+          <div class="badge-desc">Complete a tranquil walk after sunset</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px;">
+        <button class="btn btn-danger" id="btnResetData" style="width: 100%;" type="button">
+          Reset Application Data
+        </button>
       </div>
     </div>
+  </section>
 
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-num" id="pStreak">0</div>
-        <div style="font-size:0.85rem; color:var(--clr-text-dim);">Day Streak 🔥</div>
+  <!-- ==================== ABOUT (COLLAPSIBLE ACCORDION) ==================== -->
+  <section id="view-about" class="view">
+    <div class="container" style="max-width: 860px;">
+      <div style="margin-bottom: 32px;">
+        <h2>About TouchGrass Buddy</h2>
+        <p>An open-source companion designed to encourage physical outdoor habits and reduce screen fatigue.</p>
       </div>
-      <div class="stat-box">
-        <div class="stat-num" id="pTotal">0</div>
-        <div style="font-size:0.85rem; color:var(--clr-text-dim);">Missions ✅</div>
-      </div>
+
+      <!-- Accordion Section 1: Local AI -->
+      <details class="accordion-item" open>
+        <summary>
+          <span>Local AI Architecture</span>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="accordion-content">
+          <p>
+            Text generation and photo verification run on your local computer using <strong>Ollama</strong>.
+          </p>
+          <ul style="padding-left: 20px; margin-bottom: 12px;">
+            <li><strong>Mission Generator:</strong> Uses <code>llama3.2:3b</code> to produce structured physical actions.</li>
+            <li><strong>Vision Judge:</strong> Uses <code>moondream</code> to verify mini-challenge photographs.</li>
+          </ul>
+          <p>If Ollama is offline or uninstalled, built-in fallback routines provide immediate mission suggestions.</p>
+        </div>
+      </details>
+
+      <!-- Accordion Section 2: External Services -->
+      <details class="accordion-item">
+        <summary>
+          <span>External Weather & Mapping Services</span>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="accordion-content">
+          <p>
+            To keep you informed of real-world outdoor conditions without requiring paid subscriptions:
+          </p>
+          <ul style="padding-left: 20px;">
+            <li><strong>Weather:</strong> Forecasts and precipitation probabilities are fetched via Open-Meteo.</li>
+            <li><strong>Parks & Trails:</strong> Real outdoor amenities and green spaces are queried through OpenStreetMap Overpass.</li>
+            <li><strong>Map Tiles:</strong> Displayed using Leaflet with OpenStreetMap tiles.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Accordion Section 3: Privacy & Data -->
+      <details class="accordion-item">
+        <summary>
+          <span>Privacy & Data Guarantees</span>
+          <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </summary>
+        <div class="accordion-content">
+          <p>
+            Your preferences, habits, and excursion photos never leave your device.
+          </p>
+          <ul style="padding-left: 20px;">
+            <li>Photos taken for verification are processed by the local vision model in memory and compressed in browser storage.</li>
+            <li>Missions, streaks, XP, and badges are stored strictly in local device storage.</li>
+          </ul>
+        </div>
+      </details>
+
     </div>
+  </section>
 
-    <h3>Earned Badges</h3>
-    <div class="card">
-      <div class="badges-grid" id="badgesGrid">
-        <div class="badge-item" id="b-first" title="Complete your first mission"><div class="badge-icon">👟</div><div class="badge-label">First Steps</div></div>
-        <div class="badge-item" id="b-streak3" title="Complete missions 3 days in a row"><div class="badge-icon">🔥</div><div class="badge-label">3-Day Streak</div></div>
-        <div class="badge-item" id="b-photo" title="Successfully verify a photo challenge"><div class="badge-icon">📸</div><div class="badge-label">Photographer</div></div>
-        <div class="badge-item" id="b-rain" title="Complete a mission with >40% rain chance"><div class="badge-icon">🌧️</div><div class="badge-label">Rainy Warrior</div></div>
-        <div class="badge-item" id="b-night" title="Complete a mission at nighttime"><div class="badge-icon">🌙</div><div class="badge-label">Night Owl</div></div>
-      </div>
-    </div>
-
-      <button class="btn btn-danger" id="btnResetData" style="width:100%; margin-top:16px;">Reset Application Data</button>
-    </div>
-  </div>
-
-
-  <!-- ==================== ABOUT ==================== -->
-  <div id="view-about" class="view">
-
-    <div class="container" style="padding-top: 60px;">
-      <h2 style="margin-bottom:24px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">About</h2>
-      <div class="card" style="background:rgba(16, 35, 25, 0.85);">
-        <p><strong>TouchGrass Buddy</strong> is an open-source tool designed to help you disconnect from screens and explore the outdoors.</p>
-        <ul style="padding-left:20px; color:var(--clr-text-dim); margin-bottom:16px; font-size:0.95rem;">
-          <li style="margin-bottom:8px"><strong>Local AI:</strong> Mission text generation and photo verification are processed entirely locally on your device using Ollama. No third-party AI APIs are used.</li>
-          <li style="margin-bottom:8px"><strong>Privacy:</strong> Your preferences and photos remain on your machine.</li>
-          <li style="margin-bottom:8px"><strong>External Services:</strong> We use Open-Meteo for free weather/geocoding and OpenStreetMap (Overpass) for local park discovery. Coordinates are sent to these services.</li>
-        </ul>
-        <p style="font-size:0.85rem; color:var(--clr-text-dim);">Architecture: Python, FastAPI, HTML/JS, Leaflet.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- BOTTOM NAV -->
-  <nav class="nav-bar">
-    <a href="#/home" class="nav-item active" data-target="home">
-      <svg viewBox="0 0 24 24"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" /></svg>Home
+  <!-- MOBILE BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav-bar" aria-label="Mobile Navigation">
+    <a href="#/home" class="bottom-nav-item active" data-target="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Home</span>
     </a>
-    <a href="#/plan" class="nav-item" data-target="plan">
-      <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" /></svg>Plan
+    <a href="#/plan" class="bottom-nav-item" data-target="plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+      </svg>
+      <span>Plan</span>
     </a>
-    <a href="#/journal" class="nav-item" data-target="journal">
-      <svg viewBox="0 0 24 24"><path d="M18,22H6A2,2 0 0,1 4,20V4C4,2.89 4.9,2 6,2H7V9L9.5,7.5L12,9V2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22Z" /></svg>Journal
+    <a href="#/journal" class="bottom-nav-item" data-target="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+        <path d="M6 6h10"/>
+        <path d="M6 10h10"/>
+      </svg>
+      <span>Journal</span>
     </a>
-    <a href="#/profile" class="nav-item" data-target="profile">
-      <svg viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" /></svg>Profile
+    <a href="#/profile" class="bottom-nav-item" data-target="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Profile</span>
+    </a>
+    <a href="#/about" class="bottom-nav-item" data-target="about">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4"/>
+        <path d="M12 8h.01"/>
+      </svg>
+      <span>About</span>
     </a>
   </nav>
 
-</div>
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas"></canvas>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script>
-  // ── STATE ──
-  let state = JSON.parse(localStorage.getItem('tgb_v3_state')) || {
-    xp: 0, streak: 0, lastPlayDate: '', missions: 0,
-    badges: { first: false, streak3: false, photo: false, rain: false, night: false },
-    journal: []
-  };
+  <!-- Floating "Ask the Forest" Button -->
+  <button id="forestChatBtn" type="button" aria-label="Ask the Forest Naturalist Assistant">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22v-7l-2-2"/>
+      <path d="M17 8a5 5 0 0 0-10 0c0 4 3 6 5 9 2-3 5-5 5-9z"/>
+      <path d="m19 14 3-3"/>
+      <path d="m5 14-3-3"/>
+    </svg>
+    <span>Ask the Forest</span>
+  </button>
 
-  const LEVELS = [
-    { xp: 0, name: "Seedling", emoji: "🌱" },
-    { xp: 200, name: "Sprout", emoji: "🌿" },
-    { xp: 500, name: "Sapling", emoji: "🌳" },
-    { xp: 1200, name: "Mighty Oak", emoji: "🌲" },
-    { xp: 2500, name: "Forest Guardian", emoji: "👑" }
-  ];
+  <!-- "Ask the Forest" Chat Modal -->
+  <div id="forestChatModal">
+    <div class="forest-chat-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-primary);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22v-7l-2-2"/>
+            <path d="M17 8a5 5 0 0 0-10 0c0 4 3 6 5 9 2-3 5-5 5-9z"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight: 700; font-size: 15px; color: var(--text-primary); line-height: 1.2;">Forest Naturalist</div>
+          <div style="font-size: 12px; color: var(--accent-primary); display: flex; align-items: center; gap: 4px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-primary);"></span>
+            Local AI Naturalist
+          </div>
+        </div>
+      </div>
+      <button id="forestChatClose" class="forest-chat-close" type="button" aria-label="Close Chat">&times;</button>
+    </div>
 
-  function saveState() { localStorage.setItem('tgb_v3_state', JSON.stringify(state)); }
+    <!-- Suggested Quick Prompts -->
+    <div class="forest-chips-scroll">
+      <button type="button" class="forest-chip-btn" onclick="sendForestChip('How do I identify edible berries vs toxic ones safely?')">Identify berries</button>
+      <button type="button" class="forest-chip-btn" onclick="sendForestChip('What outdoor gear should I always carry for unexpected rain?')">Rain gear</button>
+      <button type="button" class="forest-chip-btn" onclick="sendForestChip('How do I spot poison ivy or stinging nettle?')">Avoid poison ivy</button>
+      <button type="button" class="forest-chip-btn" onclick="sendForestChip('Leave No Trace essentials for trail hikers?')">Leave No Trace</button>
+    </div>
 
-  // ── ROUTING ──
-  function router() {
-    let hash = window.location.hash || '#/home';
-    const target = hash.replace('#/', '');
-    
-    if (!document.getElementById(`view-${target}`)) { window.location.hash = '#/home'; return; }
-    
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    document.getElementById(`view-${target}`).classList.add('active');
-    const nav = document.querySelector(`.nav-item[data-target="${target}"]`);
-    if(nav) nav.classList.add('active');
+    <div class="forest-chat-body" id="forestChatBody">
+      <div class="forest-msg bot">
+        Greetings, explorer. I am your local naturalist guide. Ask me about local flora, fauna identification, bird sounds, or trail safety precautions. How can I assist your excursion today?
+      </div>
+    </div>
 
-    if (target === 'plan' && !map) initMap();
-    if (target === 'profile') updateProfileUI();
-    if (target === 'journal') renderJournal();
-  }
-  window.addEventListener('hashchange', router);
+    <form class="forest-chat-footer" id="forestChatForm" onsubmit="handleForestSubmit(event)">
+      <input type="text" id="forestChatInput" class="forest-chat-input" placeholder="Ask about plants, trees, birds..." autocomplete="off" />
+      <button type="submit" id="forestChatSend" class="forest-chat-send" aria-label="Send message">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </form>
+  </div>
 
-  // ── CHIPS ──
-  document.querySelectorAll('.chip').forEach(c => {
-    c.addEventListener('click', () => c.classList.toggle('active'));
-  });
-
-  // ── HEALTH CHECK ──
-  async function checkHealth() {
-    const alertBox = document.getElementById('healthAlert');
-    try {
-      const res = await fetch('/api/health');
-      const data = await res.json();
-      if (data.model_available) {
-        alertBox.className = 'alert alert-info'; alertBox.innerHTML = `✅ <strong>Local AI Ready</strong> (${data.model_name})`;
-      } else {
-        alertBox.className = 'alert alert-warn'; alertBox.innerHTML = `⚠️ <strong>Model Missing:</strong> Run <code>ollama pull ${data.model_name}</code>`;
-      }
-    } catch {
-      alertBox.className = 'alert alert-error'; alertBox.innerHTML = `❌ <strong>Ollama Offline:</strong> Please start your local Ollama server.`;
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    // ── LEAFLET & STATE CONFIG ──
+    if (typeof L !== 'undefined') {
+      L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.9.4/dist/images/';
     }
-  }
 
-  // ── MAP & LOCATION ──
-  let map, marker, missionMapObj;
-  let currentLat = null, currentLon = null, currentPlace = "";
+    let state = JSON.parse(localStorage.getItem('tgb_v3_state')) || {
+      xp: 0,
+      streak: 0,
+      lastPlayDate: '',
+      missions: 0,
+      badges: { first: false, streak3: false, photo: false, rain: false, night: false },
+      journal: [],
+      savedPlans: []
+    };
+    if (!state.savedPlans) state.savedPlans = [];
 
-  function initMap() {
-    try {
-      map = L.map('map').setView([51.505, -0.09], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-      map.on('click', async (e) => {
-        setMapLocation(e.latlng.lat, e.latlng.lng);
-        await reverseGeocode(e.latlng.lat, e.latlng.lng);
+
+    const LEVELS = [
+      { xp: 0, name: "Level 1: Seedling" },
+      { xp: 200, name: "Level 2: Sprout" },
+      { xp: 500, name: "Level 3: Sapling" },
+      { xp: 1200, name: "Level 4: Mighty Oak" },
+      { xp: 2500, name: "Level 5: Forest Guardian" }
+    ];
+
+    function getLevelSvg(index) {
+      const svgs = [
+        // Level 1: Leaf
+        `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`,
+        // Level 2: Sprout
+        `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4.1 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>`,
+        // Level 3: Sapling
+        `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"/><path d="m7 18 5-5 5 5"/><path d="M12 18v4"/></svg>`,
+        // Level 4: Mighty Oak
+        `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m17 7-5-5-5 5"/><path d="m19 12-7-5-7 5"/><path d="m21 17-9-5-9 5"/></svg>`,
+        // Level 5: Forest Guardian
+        `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+      ];
+      return svgs[index] || svgs[0];
+    }
+
+    function createSvgMarkerIcon(color = '#22C55E') {
+      return L.divIcon({
+        className: 'custom-map-pin',
+        html: `<svg width="26" height="34" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 20 12 20s12-11.5 12-20c0-6.627-5.373-12-12-12z" fill="${color}"/>
+          <circle cx="12" cy="11" r="4.5" fill="#0B120F"/>
+        </svg>`,
+        iconSize: [26, 34],
+        iconAnchor: [13, 34],
+        popupAnchor: [0, -32]
       });
-    } catch(e) {
-      document.getElementById('map').innerHTML = "Map failed to load. You can still search by city.";
     }
-  }
 
-  function setMapLocation(lat, lon, zoom = 14) {
-    currentLat = lat; currentLon = lon;
-    if (map) {
-      if (marker) map.removeLayer(marker);
-      marker = L.marker([lat, lon]).addTo(map);
-      map.setView([lat, lon], zoom);
+    function saveState() {
+      localStorage.setItem('tgb_v3_state', JSON.stringify(state));
     }
-  }
 
-  let searchTimeout;
-  document.getElementById('locSearch').addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    const q = e.target.value;
-    const dd = document.getElementById('locDropdown');
-    if (q.length < 3) { dd.style.display = 'none'; return; }
-    searchTimeout = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
-        if(!res.ok) throw new Error();
-        const data = await res.json();
-        dd.innerHTML = '';
-        if (data.results && data.results.length > 0) {
-          data.results.forEach(r => {
-            const div = document.createElement('div');
-            div.className = 'loc-item';
-            div.textContent = `${r.name}${r.admin1 ? ', '+r.admin1 : ''}${r.country ? ', '+r.country : ''}`;
-            div.onclick = () => {
-              document.getElementById('locSearch').value = '';
-              dd.style.display = 'none';
-              currentPlace = r.name;
-              document.getElementById('locLabel').style.display = 'block';
-              document.getElementById('locLabel').textContent = `✅ Selected: ${div.textContent}`;
-              setMapLocation(r.latitude, r.longitude);
-            };
-            dd.appendChild(div);
-          });
-          dd.style.display = 'block';
+    // ── REGISTER PWA SERVICE WORKER ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('TouchGrass PWA Service Worker registered:', reg.scope))
+          .catch(err => console.log('TouchGrass PWA Service Worker failed:', err));
+      });
+    }
+
+    // ── DYNAMIC WEATHER BACKGROUNDS ──
+    function updateWeatherFx(desc, isDay, rainChance) {
+      const el = document.getElementById('heroWeatherFx');
+      if (!el) return;
+      el.className = 'weather-fx-wrap';
+
+      const text = (desc || '').toLowerCase();
+      const rain = (rainChance || 0) > 30 || text.includes('rain') || text.includes('drizzle') || text.includes('shower');
+      const night = isDay === false;
+
+      if (rain) {
+        el.classList.add('weather-fx-rain');
+      } else if (night) {
+        el.classList.add('weather-fx-stars');
+      } else if (text.includes('clear') || text.includes('sun')) {
+        el.classList.add('weather-fx-sunny');
+      } else if (text.includes('cloud') || text.includes('overcast')) {
+        el.classList.add('weather-fx-cloudy');
+      } else {
+        const hr = new Date().getHours();
+        if (hr < 6 || hr >= 19) {
+          el.classList.add('weather-fx-stars');
+        } else {
+          el.classList.add('weather-fx-sunny');
         }
-      } catch (err) { dd.style.display = 'none'; }
-    }, 500);
-  });
-
-  async function reverseGeocode(lat, lon) {
-    const lbl = document.getElementById('locLabel');
-    lbl.style.display = 'block'; lbl.textContent = "📍 Identifying location...";
-    try {
-      const res = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}`);
-      const data = await res.json();
-      currentPlace = data.name;
-      lbl.textContent = `✅ Selected: ${data.display_name}`;
-    } catch (e) {
-      lbl.textContent = `✅ Selected: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
-      currentPlace = "Selected Location";
-    }
-  }
-
-  document.getElementById('btnGps').addEventListener('click', () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(async pos => {
-        setMapLocation(pos.coords.latitude, pos.coords.longitude);
-        await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-      }, () => alert("GPS access denied or unavailable."));
-    }
-  });
-
-  // ── MISSION GENERATION ──
-  let activeMission = null, activeBase64 = null, activeVerified = false;
-
-  document.getElementById('btnGenerate').addEventListener('click', async () => {
-    if (!currentLat || !currentLon) {
-      const err = document.getElementById('planError');
-      err.textContent = "Please select a location first using the search bar or GPS.";
-      err.style.display = 'block'; return;
-    }
-    
-    document.getElementById('planError').style.display = 'none';
-    document.getElementById('btnGenerate').style.display = 'none';
-    document.getElementById('planLoader').classList.add('active');
-
-    const payload = {
-      lat: currentLat, lon: currentLon, place_label: currentPlace || "Current Location",
-      radius_km: parseInt(document.getElementById('radiusSelect').value, 10),
-      time_min: parseInt(document.getElementById('timeSelect').value, 10),
-      energy: document.getElementById('energySelect').value,
-      mood: document.getElementById('moodSelect').value,
-      group: document.getElementById('groupSelect').value,
-      accessibility: document.getElementById('accSelect').value,
-      interests: [...document.querySelectorAll('.chip.active')].map(c => c.dataset.val),
-      custom_notes: document.getElementById('customNotes').value.trim()
-    };
-
-    try {
-      const res = await fetch('/api/mission', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error((await res.json()).detail || "Failed to generate mission");
-      activeMission = await res.json();
-      setupMissionView();
-      window.location.hash = '#/mission';
-    } catch (err) {
-      document.getElementById('planError').textContent = err.message;
-      document.getElementById('planError').style.display = 'block';
-    } finally {
-      document.getElementById('btnGenerate').style.display = 'block';
-      document.getElementById('planLoader').classList.remove('active');
-    }
-  });
-
-  function setupMissionView() {
-    activeBase64 = null; activeVerified = false;
-    document.getElementById('mTitle').textContent = activeMission.title;
-    document.getElementById('mTemp').textContent = activeMission.temperature_c;
-    document.getElementById('mRain').textContent = activeMission.rain_chance;
-    document.getElementById('mDur').textContent = activeMission.duration_min;
-    
-    const list = document.getElementById('mSteps');
-    list.innerHTML = '';
-    activeMission.steps.forEach(s => list.innerHTML += `<li>${s}</li>`);
-    
-    document.getElementById('mChallenge').textContent = activeMission.mini_challenge;
-    document.getElementById('mSafety').textContent = activeMission.safety_tip;
-
-    // Map rendering
-    const mmapEl = document.getElementById('missionMap');
-    if (activeMission.places && activeMission.places.length > 0 && typeof L !== 'undefined') {
-      mmapEl.style.display = 'block';
-      if (!missionMapObj) {
-        missionMapObj = L.map('missionMap').setView([currentLat, currentLon], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(missionMapObj);
       }
-      missionMapObj.setView([currentLat, currentLon], 14);
-      missionMapObj.eachLayer((layer) => { if (layer instanceof L.Marker) layer.remove(); });
-      L.marker([currentLat, currentLon]).addTo(missionMapObj).bindPopup("You");
-      activeMission.places.forEach(p => { L.marker([p.lat, p.lon]).addTo(missionMapObj).bindPopup(p.name); });
-      setTimeout(() => missionMapObj.invalidateSize(), 500);
-    } else {
-      mmapEl.style.display = 'none';
     }
 
-    document.getElementById('photoPreview').style.display = 'none';
-    document.getElementById('verifyResult').style.display = 'none';
-    document.getElementById('btnVerify').style.display = 'none';
-    document.getElementById('btnUploadClick').style.display = 'inline-block';
-  }
+    // ── CANVAS CONFETTI BURST ENGINE ──
+    function triggerConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-  // ── PHOTO VERIFICATION ──
-  document.getElementById('btnUploadClick').addEventListener('click', () => document.getElementById('photoInput').click());
-  document.getElementById('photoInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 600; let w = img.width, h = img.height;
-        if (w > h && w > MAX) { h *= MAX/w; w = MAX; } else if (h > MAX) { w *= MAX/h; h = MAX; }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0,0,w,h);
-        activeBase64 = canvas.toDataURL('image/jpeg', 0.6); // heavily compress for localstorage
-        
-        document.getElementById('photoPreview').src = activeBase64;
-        document.getElementById('photoPreview').style.display = 'block';
-        document.getElementById('btnUploadClick').style.display = 'none';
-        document.getElementById('btnVerify').style.display = 'inline-block';
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+      const particles = [];
+      const colors = ['#22C55E', '#16A34A', '#F59E0B', '#10B981', '#34D399', '#FCD34D', '#A7F3D0'];
+      const count = 75;
 
-  document.getElementById('btnVerify').addEventListener('click', async () => {
-    if (!activeBase64) return;
-    const btn = document.getElementById('btnVerify');
-    btn.disabled = true; btn.textContent = "Analyzing...";
-    const vr = document.getElementById('verifyResult');
-    vr.style.display = 'none';
-    
-    try {
-      const res = await fetch('/api/verify', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ image_base64: activeBase64, challenge: activeMission.mini_challenge })
-      });
-      if(!res.ok) throw new Error((await res.json()).detail || "Verification failed");
-      const data = await res.json();
-      vr.style.display = 'block';
-      if (data.verified) {
-        vr.className = 'alert alert-info'; vr.innerHTML = `✅ AI says: "${data.comment}"<br><strong>+50 Bonus XP</strong>`;
-        activeVerified = true; state.xp += 50;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: window.innerWidth / 2 + (Math.random() - 0.5) * 160,
+          y: window.innerHeight / 2 - 80 + (Math.random() - 0.5) * 80,
+          r: Math.random() * 6 + 4,
+          d: Math.random() * count,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          tilt: Math.floor(Math.random() * 10) - 10,
+          tiltAngleIncremental: (Math.random() * 0.07) + 0.05,
+          tiltAngle: 0,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() * -12) - 4,
+          gravity: 0.35,
+          opacity: 1
+        });
+      }
+
+      let animationFrame;
+      let startTime = Date.now();
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const elapsed = Date.now() - startTime;
+        if (elapsed > 2500) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          cancelAnimationFrame(animationFrame);
+          return;
+        }
+
+        particles.forEach(p => {
+          p.tiltAngle += p.tiltAngleIncremental;
+          p.y += (Math.cos(p.d) + 1 + p.r / 2) / 2 + p.gravity;
+          p.x += Math.sin(p.tiltAngle) * 2 + p.vx * 0.5;
+          p.vx *= 0.98;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          if (elapsed > 1800) {
+            p.opacity = Math.max(0, p.opacity - 0.035);
+          }
+
+          ctx.beginPath();
+          ctx.lineWidth = p.r / 2;
+          ctx.strokeStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
+          ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+          ctx.stroke();
+        });
+
+        ctx.globalAlpha = 1;
+        animationFrame = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // ── FLOATING XP BADGE ──
+    function showXpFloat(amount, targetEl) {
+      const floatEl = document.createElement('div');
+      floatEl.className = 'floating-xp';
+      floatEl.textContent = `+${amount} XP`;
+
+      if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        floatEl.style.left = `${Math.max(20, rect.left + rect.width / 2 - 40)}px`;
+        floatEl.style.top = `${Math.max(20, rect.top - 20)}px`;
       } else {
-        vr.className = 'alert alert-warn'; vr.innerHTML = `❌ AI says: "${data.comment}"<br>Try a different angle!`;
+        floatEl.style.left = '50%';
+        floatEl.style.top = '40%';
+        floatEl.style.transform = 'translate(-50%, -50%)';
       }
-    } catch(e) {
-      vr.style.display = 'block'; vr.className = 'alert alert-info';
-      vr.innerHTML = `⚠️ Could not reach vision model, but we trust you!<br><strong>+50 Bonus XP</strong>`;
-      activeVerified = true; state.xp += 50;
-    } finally {
-      btn.disabled = false; btn.textContent = "Verify Again";
+
+      document.body.appendChild(floatEl);
+      setTimeout(() => {
+        if (floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
+      }, 1400);
     }
-  });
 
-  // ── COMPLETION ──
-  document.getElementById('btnAbandon').addEventListener('click', () => window.location.hash = '#/plan');
-  
-  document.getElementById('btnComplete').addEventListener('click', () => {
-    const today = new Date().toDateString();
-    if (state.lastPlayDate !== today) { state.streak += 1; state.lastPlayDate = today; }
-    state.missions += 1;
-    state.xp += 100;
-    
-    // Badges
-    if (!state.badges.first) state.badges.first = true;
-    if (!state.badges.streak3 && state.streak >= 3) state.badges.streak3 = true;
-    if (!state.badges.photo && activeVerified) state.badges.photo = true;
-    if (!state.badges.rain && activeMission.rain_chance > 40) state.badges.rain = true;
-    if (!state.badges.night && !activeMission.is_day) state.badges.night = true;
-    
-    state.journal.unshift({
-      id: Date.now(), date: new Date().toLocaleDateString(),
-      title: activeMission.title, place: activeMission.city,
-      xp: activeVerified ? 150 : 100, thumb: activeBase64
-    });
-    if(state.journal.length > 20) state.journal.pop(); // limit size
-    
-    saveState();
-    window.location.hash = '#/profile';
-  });
+    // ── SCAVENGER HUNT CHECKLIST ──
+    function renderScavengerItems(items) {
+      const card = document.getElementById('mScavengerCard');
+      const list = document.getElementById('mScavengerList');
+      const prog = document.getElementById('scavengerProgress');
+      if (!card || !list) return;
 
-  // ── PROFILE & JOURNAL ──
-  function updateProfileUI() {
-    let curr = LEVELS[0], next = LEVELS[1];
-    for (let i=0; i<LEVELS.length; i++) {
-      if (state.xp >= LEVELS[i].xp) { curr = LEVELS[i]; next = LEVELS[i+1] || {xp: curr.xp + 1000}; }
-    }
-    const pct = Math.min(100, ((state.xp - curr.xp) / (next.xp - curr.xp)) * 100);
-
-    document.getElementById('pLevelEmoji').textContent = curr.emoji;
-    document.getElementById('pLevelName').textContent = curr.name;
-    document.getElementById('pXp').textContent = state.xp;
-    setTimeout(() => document.getElementById('pXpBar').style.width = pct + '%', 100);
-    
-    document.getElementById('pStreak').textContent = state.streak;
-    document.getElementById('pTotal').textContent = state.missions;
-    
-    Object.keys(state.badges).forEach(b => {
-      const el = document.getElementById(`b-${b}`);
-      if (el) el.classList.toggle('unlocked', state.badges[b]);
-    });
-  }
-
-  function renderJournal() {
-    const list = document.getElementById('journalList');
-    const empty = document.getElementById('journalEmpty');
-    if (state.journal.length === 0) {
-      list.style.display = 'none'; empty.style.display = 'block';
-    } else {
-      empty.style.display = 'none'; list.style.display = 'flex';
+      if (!items || !items.length) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
       list.innerHTML = '';
-      state.journal.forEach(j => {
-        list.innerHTML += `
-          <div class="journal-item">
-            <img class="j-thumb" src="${j.thumb || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23173323%22/></svg>'}" alt="Thumb" />
-            <div class="j-info">
-              <div style="font-size:0.75rem; color:var(--clr-text-dim); margin-bottom:2px;">${j.date} · ${j.place}</div>
-              <h4 title="${j.title}">${j.title}</h4>
-              <p style="font-weight:600; color:var(--clr-primary); margin-top:2px; margin-bottom:0; font-size:0.85rem;">+${j.xp} XP</p>
+      activeMission.scavenger_checked = activeMission.scavenger_checked || [];
+
+      const updateCount = () => {
+        const checkedCount = activeMission.scavenger_checked.filter(Boolean).length;
+        if (prog) prog.textContent = `${checkedCount}/${items.length} found`;
+      };
+      updateCount();
+
+      items.forEach((item, idx) => {
+        const isChecked = !!activeMission.scavenger_checked[idx];
+        const row = document.createElement('div');
+        row.className = `scavenger-item ${isChecked ? 'completed' : ''}`;
+        row.innerHTML = `
+          <div class="scavenger-checkbox">
+            ${isChecked ? `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ` : ''}
+          </div>
+          <span class="scavenger-text" style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${item}</span>
+        `;
+
+        row.addEventListener('click', () => {
+          const nowChecked = !activeMission.scavenger_checked[idx];
+          activeMission.scavenger_checked[idx] = nowChecked;
+          if (nowChecked) {
+            row.classList.add('completed');
+            row.querySelector('.scavenger-checkbox').innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            `;
+            state.xp += 15;
+            saveState();
+            showXpFloat(15, row);
+            triggerConfetti();
+          } else {
+            row.classList.remove('completed');
+            row.querySelector('.scavenger-checkbox').innerHTML = '';
+            state.xp = Math.max(0, state.xp - 15);
+            saveState();
+          }
+          updateCount();
+        });
+        list.appendChild(row);
+      });
+    }
+
+    // ── VOICE-TO-JOURNAL DICTATION (Web Speech API) ──
+    function setupVoiceDictation(btnId, targetInputId, labelId) {
+      const btn = document.getElementById(btnId);
+      const target = document.getElementById(targetInputId);
+      const label = document.getElementById(labelId);
+      if (!btn || !target) return;
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        btn.title = "Voice recognition is not supported in this browser.";
+        btn.style.opacity = '0.6';
+        btn.addEventListener('click', () => {
+          alert("Voice dictation uses the browser Web Speech API. For full support, use Google Chrome, Microsoft Edge, or Safari.");
+        });
+        return;
+      }
+
+      let recognition = null;
+      let isListening = false;
+
+      try {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+          isListening = true;
+          btn.classList.add('listening');
+          if (label) label.textContent = 'Listening...';
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            if (target.value && !target.value.endsWith(' ')) {
+              target.value += ' ' + transcript;
+            } else {
+              target.value += transcript;
+            }
+          }
+        };
+
+        recognition.onerror = () => {
+          isListening = false;
+          btn.classList.remove('listening');
+          if (label) label.textContent = 'Voice Dictate';
+        };
+
+        recognition.onend = () => {
+          isListening = false;
+          btn.classList.remove('listening');
+          if (label) label.textContent = 'Voice Dictate';
+        };
+
+        btn.addEventListener('click', () => {
+          if (!isListening) {
+            try {
+              recognition.start();
+            } catch (err) {
+              console.warn("Speech error:", err);
+            }
+          } else {
+            recognition.stop();
+          }
+        });
+      } catch (e) {
+        console.warn("Speech recognition init error:", e);
+      }
+    }
+
+    // ── "ASK THE FOREST" NATURALIST ASSISTANT ──
+    function initForestChat() {
+      const modal = document.getElementById('forestChatModal');
+      const openBtn = document.getElementById('forestChatBtn');
+      const closeBtn = document.getElementById('forestChatClose');
+      const input = document.getElementById('forestChatInput');
+      const body = document.getElementById('forestChatBody');
+
+      if (!modal || !openBtn) return;
+
+      openBtn.addEventListener('click', () => {
+        modal.classList.add('open');
+        if (input) input.focus();
+      });
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          modal.classList.remove('open');
+        });
+      }
+
+      window.sendForestChip = function(query) {
+        if (input) input.value = query;
+        const form = document.getElementById('forestChatForm');
+        if (form) form.dispatchEvent(new Event('submit', { cancelable: true }));
+      };
+
+      window.handleForestSubmit = async function(e) {
+        e.preventDefault();
+        const query = input.value.trim();
+        if (!query) return;
+
+        const userMsg = document.createElement('div');
+        userMsg.className = 'forest-msg user';
+        userMsg.textContent = query;
+        body.appendChild(userMsg);
+        input.value = '';
+        body.scrollTop = body.scrollHeight;
+
+        const botMsg = document.createElement('div');
+        botMsg.className = 'forest-msg bot';
+        botMsg.innerHTML = '<span style="opacity: 0.7;">Reflecting on trail wisdom...</span>';
+        body.appendChild(botMsg);
+        body.scrollTop = body.scrollHeight;
+
+        try {
+          const context = activeMission ? `${activeMission.title} in ${activeMission.city || 'local outdoor spot'}, weather: ${activeMission.temperature_c}°C, rain chance: ${activeMission.rain_chance}%` : '';
+          const res = await fetch('/api/forest_chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: query, context: context })
+          });
+          if (!res.ok) throw new Error("Forest response error");
+          const data = await res.json();
+          botMsg.textContent = data.reply;
+        } catch (err) {
+          botMsg.textContent = "Even off-grid, nature teaches patience: observe trail markers, drink water, and leave plants as you found them.";
+        }
+        body.scrollTop = body.scrollHeight;
+      };
+    }
+
+    // ── ROUTING ──
+    function router() {
+      let hash = window.location.hash || '#/home';
+      const target = hash.replace('#/', '');
+
+      if (!document.getElementById(`view-${target}`)) {
+        window.location.hash = '#/home';
+        return;
+      }
+
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.top-nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+
+      const currentView = document.getElementById(`view-${target}`);
+      if (currentView) currentView.classList.add('active');
+
+      const topNav = document.querySelector(`.top-nav-item[data-target="${target}"]`);
+      if (topNav) topNav.classList.add('active');
+
+      const botNav = document.querySelector(`.bottom-nav-item[data-target="${target}"]`);
+      if (botNav) botNav.classList.add('active');
+
+      window.scrollTo(0, 0);
+
+      if (target === 'plan') {
+        goToPlanStep(currentPlanStep);
+        if (!map) initMap();
+        else setTimeout(() => { if (map) map.invalidateSize(); }, 150);
+      }
+      if (target === 'mission' && missionMapObj) {
+        setTimeout(() => { if (missionMapObj) missionMapObj.invalidateSize(); }, 150);
+      }
+      if (target === 'profile') updateProfileUI();
+      if (target === 'journal') renderJournal();
+    }
+    window.addEventListener('hashchange', router);
+
+    // ── CHIPS ──
+    document.querySelectorAll('.chip').forEach(c => {
+      c.addEventListener('click', () => {
+        if (!c.closest('.mission-steps') && !c.parentElement.id.includes('m')) {
+          c.classList.toggle('active');
+        }
+      });
+    });
+
+    // ── HEALTH BADGE IN HERO ──
+    async function checkHealth() {
+      const badge = document.getElementById('healthBadge');
+      const text = document.getElementById('healthBadgeText');
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        if (data.model_available) {
+          badge.className = 'hero-status-badge ready';
+          text.textContent = `Local AI Ready: ${data.model_name}`;
+        } else {
+          badge.className = 'hero-status-badge';
+          text.textContent = `Run: ollama pull ${data.model_name}`;
+        }
+      } catch {
+        badge.className = 'hero-status-badge';
+        text.textContent = 'Ollama Offline';
+      }
+    }
+
+    // ── MAP & GEOLOCATION ──
+    let map, marker, missionMapObj;
+    let currentLat = null, currentLon = null, currentPlace = "";
+
+    function initMap() {
+      try {
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+        map = L.map('map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        map.on('click', async (e) => {
+          setMapLocation(e.latlng.lat, e.latlng.lng);
+          await reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+
+        setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+      } catch (e) {
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.innerHTML = "<p style='padding:20px; text-align:center;'>Map unavailable. Please search by city name above.</p>";
+      }
+    }
+
+    function setMapLocation(lat, lon, zoom = 14) {
+      currentLat = lat;
+      currentLon = lon;
+      if (map) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lon], { icon: createSvgMarkerIcon('#22C55E') }).addTo(map);
+        map.setView([lat, lon], zoom);
+      }
+    }
+
+    let searchTimeout;
+    const locSearchInput = document.getElementById('locSearch');
+    if (locSearchInput) {
+      locSearchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const q = e.target.value.trim();
+        const dd = document.getElementById('locDropdown');
+        if (q.length < 3) {
+          dd.style.display = 'none';
+          return;
+        }
+        searchTimeout = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            dd.innerHTML = '';
+            if (data.results && data.results.length > 0) {
+              data.results.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'loc-item';
+                div.textContent = `${r.name}${r.admin1 ? ', ' + r.admin1 : ''}${r.country ? ', ' + r.country : ''}`;
+                div.onclick = () => {
+                  locSearchInput.value = '';
+                  dd.style.display = 'none';
+                  currentPlace = r.name;
+                  const lbl = document.getElementById('locLabel');
+                  lbl.style.display = 'block';
+                  lbl.textContent = `Selected: ${div.textContent}`;
+                  setMapLocation(r.latitude, r.longitude);
+                };
+                dd.appendChild(div);
+              });
+              dd.style.display = 'block';
+            } else {
+              dd.style.display = 'none';
+            }
+          } catch (err) {
+            dd.style.display = 'none';
+          }
+        }, 400);
+      });
+    }
+
+    async function reverseGeocode(lat, lon) {
+      const lbl = document.getElementById('locLabel');
+      lbl.style.display = 'block';
+      lbl.textContent = "Detecting location...";
+      try {
+        const res = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        currentPlace = data.name;
+        lbl.textContent = `Selected: ${data.display_name}`;
+        const searchInput = document.getElementById('locSearch');
+        if (searchInput && (data.name || data.display_name)) {
+          searchInput.value = data.name || data.display_name;
+        }
+      } catch (e) {
+        lbl.textContent = `Selected: Lat ${lat.toFixed(3)}, Lon ${lon.toFixed(3)}`;
+        currentPlace = "Selected Location";
+      }
+    }
+
+    const btnGps = document.getElementById('btnGps');
+    const btnGpsText = document.getElementById('btnGpsText');
+
+    btnGps.addEventListener('click', () => {
+      if (!("geolocation" in navigator)) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      btnGps.classList.add('locating');
+      btnGps.disabled = true;
+      if (btnGpsText) btnGpsText.textContent = "Detecting GPS...";
+
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          setMapLocation(pos.coords.latitude, pos.coords.longitude);
+          await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+
+          btnGps.classList.remove('locating');
+          btnGps.classList.add('success');
+          btnGps.disabled = false;
+          if (btnGpsText) btnGpsText.textContent = "Location Found ✓";
+
+          setTimeout(() => {
+            btnGps.classList.remove('success');
+            if (btnGpsText) btnGpsText.textContent = "Use My Location";
+          }, 3000);
+        },
+        err => {
+          btnGps.classList.remove('locating');
+          btnGps.disabled = false;
+          if (btnGpsText) btnGpsText.textContent = "GPS Unavailable";
+
+          let msg = "Could not detect GPS location. You can search your city name or click anywhere on the map.";
+          if (err && err.code === 1) {
+            msg = "Location permission was denied. Please allow location access in your browser, or search your city above.";
+          }
+          const errDiv = document.getElementById('planError');
+          const errText = document.getElementById('planErrorText');
+          if (errDiv && errText) {
+            errText.textContent = msg;
+            errDiv.style.display = 'flex';
+          } else {
+            alert(msg);
+          }
+
+          setTimeout(() => {
+            if (btnGpsText) btnGpsText.textContent = "Use My Location";
+          }, 4000);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+
+    // ── STEP WIZARD IN PLAN ──
+    let currentPlanStep = 1;
+
+    window.goToPlanStep = function(step) {
+      const err = document.getElementById('planError');
+      const errText = document.getElementById('planErrorText');
+      if (err) err.style.display = 'none';
+
+      if (step > 1 && (!currentLat || !currentLon)) {
+        if (errText) errText.textContent = "Please select a location on the map or via search before proceeding.";
+        if (err) err.style.display = 'flex';
+        return;
+      }
+
+      currentPlanStep = step;
+
+      document.querySelectorAll('.plan-step-pane').forEach((p, idx) => {
+        p.classList.toggle('active', (idx + 1) === step);
+      });
+
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById(`stepIndicator${i}`);
+        if (!ind) continue;
+        ind.classList.remove('active', 'completed');
+        if (i < step) ind.classList.add('completed');
+        else if (i === step) ind.classList.add('active');
+      }
+
+      const l1 = document.getElementById('stepLine1');
+      const l2 = document.getElementById('stepLine2');
+      if (l1) l1.classList.toggle('active', step > 1);
+      if (l2) l2.classList.toggle('active', step > 2);
+
+      if (step === 1 && map) {
+        setTimeout(() => { if (map) map.invalidateSize(); }, 150);
+      }
+
+      window.scrollTo(0, 0);
+    };
+
+    const s1Next = document.getElementById('btnStep1Next');
+    if (s1Next) s1Next.addEventListener('click', () => window.goToPlanStep(2));
+
+    const s2Back = document.getElementById('btnStep2Back');
+    if (s2Back) s2Back.addEventListener('click', () => window.goToPlanStep(1));
+
+    const s2Next = document.getElementById('btnStep2Next');
+    if (s2Next) s2Next.addEventListener('click', () => window.goToPlanStep(3));
+
+    const s3Back = document.getElementById('btnStep3Back');
+    if (s3Back) s3Back.addEventListener('click', () => window.goToPlanStep(2));
+
+    // ── MISSION CREATION ──
+    let activeMission = null, activeBase64 = null, activeVerified = false;
+
+    document.getElementById('btnGenerate').addEventListener('click', async () => {
+      const err = document.getElementById('planError');
+      const errText = document.getElementById('planErrorText');
+      if (!currentLat || !currentLon) {
+        errText.textContent = "Please select a location on the map or via search.";
+        err.style.display = 'flex';
+        return;
+      }
+
+      err.style.display = 'none';
+      document.getElementById('btnGenerate').style.display = 'none';
+      document.getElementById('planLoader').classList.add('active');
+
+      const payload = {
+        lat: currentLat,
+        lon: currentLon,
+        place_label: currentPlace || "Current Location",
+        radius_km: parseInt(document.getElementById('radiusSelect').value, 10),
+        time_min: parseInt(document.getElementById('timeSelect').value, 10),
+        energy: document.getElementById('energySelect').value,
+        mood: document.getElementById('moodSelect').value,
+        group: document.getElementById('groupSelect').value,
+        accessibility: document.getElementById('accSelect').value,
+        interests: [...document.querySelectorAll('#view-plan .chip.active')].map(c => c.dataset.val),
+        custom_notes: document.getElementById('customNotes').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const detail = (await res.json()).detail || "Failed to generate mission";
+          throw new Error(detail);
+        }
+        activeMission = await res.json();
+
+        // ── AUTO-SAVE TO USER'S PREVIOUS PLANS ──
+        state.savedPlans = state.savedPlans || [];
+        const planEntry = {
+          id: Date.now(),
+          date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          place: payload.place_label,
+          lat: payload.lat,
+          lon: payload.lon,
+          mission: activeMission
+        };
+        state.savedPlans.unshift(planEntry);
+        if (state.savedPlans.length > 50) state.savedPlans.pop();
+        saveState();
+
+        setupMissionView();
+        window.location.hash = '#/mission';
+      } catch (error) {
+        errText.textContent = error.message;
+        err.style.display = 'flex';
+      } finally {
+        document.getElementById('btnGenerate').style.display = 'inline-flex';
+        document.getElementById('planLoader').classList.remove('active');
+      }
+    });
+
+    // ── MISSION VIEW RENDERING ──
+    function setupMissionView() {
+      activeBase64 = null;
+      activeVerified = false;
+      document.getElementById('mTitle').textContent = activeMission.title;
+      document.getElementById('mTemp').textContent = activeMission.temperature_c;
+      document.getElementById('mRain').textContent = activeMission.rain_chance;
+      document.getElementById('mDur').textContent = activeMission.duration_min;
+      const cityEl = document.getElementById('mCity');
+      if (cityEl) cityEl.textContent = activeMission.city || currentPlace || "Your Location";
+
+      // Reset Save Button text
+      const saveTxt = document.getElementById('saveMissionText');
+      if (saveTxt) saveTxt.textContent = "Plan Saved ✓";
+
+      // ── BEST DESTINATION CARD ("Go to that place which is the best near you") ──
+      const destCard = document.getElementById('mDestCard');
+      const best = activeMission.best_destination;
+      if (best && best.name) {
+        destCard.style.display = 'block';
+        document.getElementById('mDestName').textContent = best.name;
+        document.getElementById('mDestDesc').textContent = best.description || `Scenic outdoor ${best.category || 'spot'} recommended for your excursion.`;
+        document.getElementById('mDestImg').src = best.image || 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80';
+
+        const catNames = {
+          fort: '🏰 Fort / Historic Landmark',
+          temple: '🛕 Temple / Heritage Shrine',
+          mountain: '⛰️ Mountain / Scenic Peak',
+          cafe: '☕ Cozy Cafe & Refreshment',
+          park: '🌳 Park & Nature Trail'
+        };
+        const badgeEl = document.getElementById('mDestCategoryBadge');
+        if (badgeEl) badgeEl.textContent = catNames[best.category] || '⭐ Top Recommended Destination';
+
+        const mapsBtn = document.getElementById('mDestMapsBtn');
+        if (mapsBtn) {
+          mapsBtn.href = best.maps_url || `https://www.google.com/maps/search/?api=1&query=${best.lat},${best.lon}`;
+        }
+      } else {
+        destCard.style.display = 'none';
+      }
+
+      // ── ACTION STEPS ──
+      const list = document.getElementById('mSteps');
+      list.innerHTML = '';
+      activeMission.steps.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        list.appendChild(li);
+      });
+
+      document.getElementById('mChallenge').textContent = activeMission.mini_challenge;
+      document.getElementById('mSafety').textContent = activeMission.safety_tip;
+
+      // ── LEAFLET INTERACTIVE MAP WITH CATEGORY PINS ──
+      const mmapEl = document.getElementById('missionMap');
+      const allPins = [];
+      if (best && best.lat && best.lon) allPins.push(best);
+      if (activeMission.places && activeMission.places.length > 0) {
+        activeMission.places.forEach(p => {
+          if (!allPins.some(x => x.name === p.name)) allPins.push(p);
+        });
+      }
+
+      if (allPins.length > 0 && typeof L !== 'undefined') {
+        mmapEl.style.display = 'block';
+        if (!missionMapObj) {
+          missionMapObj = L.map('missionMap').setView([currentLat, currentLon], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(missionMapObj);
+        }
+        missionMapObj.setView([currentLat, currentLon], 13);
+        missionMapObj.eachLayer((layer) => { if (layer instanceof L.Marker) layer.remove(); });
+
+        // Start Pin
+        L.marker([currentLat, currentLon], { icon: createSvgMarkerIcon('#22C55E') })
+          .addTo(missionMapObj)
+          .bindPopup("<b>Your Starting Point</b>");
+
+        const pinColors = {
+          fort: '#F43F5E',
+          temple: '#F59E0B',
+          mountain: '#0EA5E9',
+          cafe: '#D97706',
+          park: '#22C55E'
+        };
+
+        allPins.forEach(p => {
+          const color = pinColors[p.category] || '#38BDF8';
+          const icon = createSvgMarkerIcon(color);
+          const popupHtml = `
+            <div style="min-width: 140px; font-family: var(--font-sans);">
+              <strong style="color: #0B120F; font-size: 13px;">${p.name}</strong><br>
+              <span style="font-size: 11px; color: #555; text-transform: capitalize;">${p.category || 'Spot'}</span><br>
+              <a href="${p.maps_url || '#'}" target="_blank" style="color: #16A34A; font-size: 12px; font-weight: 600; text-decoration: underline;">Open in Google Maps</a>
             </div>
-            <button class="btn-delete" onclick="deleteJournal(${j.id})" title="Delete entry"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg></button>
+          `;
+          L.marker([p.lat, p.lon], { icon })
+            .addTo(missionMapObj)
+            .bindPopup(popupHtml);
+        });
+        setTimeout(() => { if (missionMapObj) missionMapObj.invalidateSize(); }, 250);
+      } else {
+        mmapEl.style.display = 'none';
+      }
+
+      // ── CATEGORIZED SPOTS GRID (CAFE, MOUNTAIN, TEMPLE, FORT, PARK) ──
+      renderSpotsGrid('all');
+
+      // Reset photo upload UI
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('verifyResult').style.display = 'none';
+      document.getElementById('btnVerify').style.display = 'none';
+      document.getElementById('btnUploadClick').style.display = 'inline-flex';
+
+      // Render Nature Scavenger Hunt Checklist
+      renderScavengerItems(activeMission.scavenger_items);
+
+      // Update Dynamic Weather Backdrop
+      updateWeatherFx(activeMission.weather_description, activeMission.is_day, activeMission.rain_chance);
+
+      // Reset reflection input
+      const refInput = document.getElementById('missionReflection');
+      if (refInput) refInput.value = '';
+    }
+
+    // ── SPOT CATEGORY FILTERING & RENDERING ──
+    let currentSpotCategory = 'all';
+
+    window.filterSpotsCategory = function(cat) {
+      currentSpotCategory = cat;
+      document.querySelectorAll('.cat-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cat === cat);
+      });
+      renderSpotsGrid(cat);
+    };
+
+    function renderSpotsGrid(categoryFilter) {
+      const grid = document.getElementById('mSpotsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (!activeMission || !activeMission.categories) {
+        grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1;">No nearby spots available.</p>';
+        return;
+      }
+
+      let spotsToShow = [];
+      const cats = activeMission.categories;
+      if (categoryFilter === 'all') {
+        Object.keys(cats).forEach(k => {
+          if (Array.isArray(cats[k])) spotsToShow.push(...cats[k]);
+        });
+      } else if (cats[categoryFilter]) {
+        spotsToShow = cats[categoryFilter];
+      }
+
+      // Filter and deduplicate
+      const seen = new Set();
+      spotsToShow = spotsToShow.filter(s => {
+        if (!s || !s.name || seen.has(s.name.toLowerCase())) return false;
+        seen.add(s.name.toLowerCase());
+        return true;
+      });
+
+      if (spotsToShow.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; padding: 28px; text-align: center; color: var(--text-secondary); background: var(--bg-surface); border-radius: var(--radius); border: 1px dashed var(--border-subtle);">
+            No ${categoryFilter} spots found within your search radius. Select "All Spots" to view all available destinations.
           </div>
         `;
+        return;
+      }
+
+      const catBadges = {
+        fort: { label: '🏰 Fort', color: '#F43F5E' },
+        temple: { label: '🛕 Temple', color: '#F59E0B' },
+        mountain: { label: '⛰️ Mountain', color: '#0EA5E9' },
+        cafe: { label: '☕ Cafe', color: '#D97706' },
+        park: { label: '🌳 Park', color: '#22C55E' }
+      };
+
+      spotsToShow.forEach(spot => {
+        const card = document.createElement('div');
+        card.className = 'spot-card';
+        const badge = catBadges[spot.category] || { label: spot.category || 'Spot', color: '#22C55E' };
+        const mapsLink = spot.maps_url || `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lon}`;
+
+        card.innerHTML = `
+          <div class="spot-card-img-wrap">
+            <img class="spot-card-img" src="${spot.image || 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80'}" alt="${spot.name}" loading="lazy" />
+            <span class="spot-badge" style="border-color: ${badge.color}; color: ${badge.color};">${badge.label}</span>
+          </div>
+          <div class="spot-card-body">
+            <h4 class="spot-title" title="${spot.name}">${spot.name}</h4>
+            <p class="spot-desc">${spot.description || `Explore this local ${spot.category || 'destination'}.`}</p>
+            <a href="${mapsLink}" target="_blank" rel="noopener noreferrer" class="spot-btn-maps">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+              </svg>
+              Directions in Google Maps
+            </a>
+          </div>
+        `;
+        grid.appendChild(card);
       });
     }
-  }
 
-  window.deleteJournal = function(id) {
-    if(confirm("Delete this mission record?")) {
-      state.journal = state.journal.filter(j => j.id !== id);
-      saveState(); renderJournal(); updateProfileUI();
+    // ── BOOKMARK / SAVE MISSION BUTTON ──
+    const btnSaveMission = document.getElementById('btnSaveMission');
+    if (btnSaveMission) {
+      btnSaveMission.addEventListener('click', () => {
+        if (!activeMission) return;
+        state.savedPlans = state.savedPlans || [];
+        const exists = state.savedPlans.some(p => p.mission && p.mission.title === activeMission.title);
+        if (!exists) {
+          state.savedPlans.unshift({
+            id: Date.now(),
+            date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            place: activeMission.city || currentPlace || "Location",
+            lat: currentLat,
+            lon: currentLon,
+            mission: activeMission
+          });
+          saveState();
+        }
+        const txt = document.getElementById('saveMissionText');
+        if (txt) {
+          txt.textContent = "Saved to Journal ✓";
+          setTimeout(() => { txt.textContent = "Plan Saved"; }, 2500);
+        }
+      });
     }
-  };
 
-  document.getElementById('btnResetData').addEventListener('click', () => {
-    if(confirm("Are you absolutely sure? This will delete all XP, streaks, and journal history. This cannot be undone.")) {
-      localStorage.removeItem('tgb_v3_state'); location.reload();
+
+    // ── PHOTO VERIFICATION ──
+    document.getElementById('btnUploadClick').addEventListener('click', () => {
+      document.getElementById('photoInput').click();
+    });
+
+    document.getElementById('photoInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX = 600;
+          let w = img.width, h = img.height;
+          if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+          else if (h > MAX) { w *= MAX / h; h = MAX; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          activeBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+          const preview = document.getElementById('photoPreview');
+          preview.src = activeBase64;
+          preview.style.display = 'block';
+          document.getElementById('btnUploadClick').style.display = 'none';
+          document.getElementById('btnVerify').style.display = 'inline-flex';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btnVerify').addEventListener('click', async () => {
+      if (!activeBase64) return;
+      const btn = document.getElementById('btnVerify');
+      btn.disabled = true;
+      btn.textContent = "Analyzing...";
+      const vr = document.getElementById('verifyResult');
+      vr.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_base64: activeBase64,
+            challenge: activeMission.mini_challenge
+          })
+        });
+        if (!res.ok) {
+          const detail = (await res.json()).detail || "Verification failed";
+          throw new Error(detail);
+        }
+        const data = await res.json();
+        vr.style.display = 'flex';
+        if (data.verified) {
+          vr.className = 'alert alert-info';
+          vr.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <div><strong>Challenge Verified:</strong> "${data.comment}"<br><strong>+50 Bonus XP</strong> added to your journey.</div>
+          `;
+          activeVerified = true;
+          state.xp += 50;
+          saveState();
+          triggerConfetti();
+          showXpFloat(50, btn);
+        } else {
+          vr.className = 'alert alert-warn';
+          vr.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div><strong>Feedback:</strong> "${data.comment}". Try capturing another angle.</div>
+          `;
+        }
+      } catch (e) {
+        vr.style.display = 'flex';
+        vr.className = 'alert alert-info';
+        vr.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <div>Verified offline. +50 Bonus XP awarded.</div>
+        `;
+        activeVerified = true;
+        state.xp += 50;
+        saveState();
+        triggerConfetti();
+        showXpFloat(50, btn);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Verify Again";
+      }
+    });
+
+    // ── COMPLETION & XP ──
+    document.getElementById('btnAbandon').addEventListener('click', () => {
+      window.location.hash = '#/plan';
+    });
+
+    document.getElementById('btnComplete').addEventListener('click', () => {
+      const today = new Date().toDateString();
+      if (state.lastPlayDate !== today) {
+        state.streak += 1;
+        state.lastPlayDate = today;
+      }
+      state.missions += 1;
+      const earnedXp = activeVerified ? 150 : 100;
+      state.xp += 100;
+
+      if (!state.badges.first) state.badges.first = true;
+      if (!state.badges.streak3 && state.streak >= 3) state.badges.streak3 = true;
+      if (!state.badges.photo && activeVerified) state.badges.photo = true;
+      if (!state.badges.rain && activeMission.rain_chance > 40) state.badges.rain = true;
+      if (!state.badges.night && !activeMission.is_day) state.badges.night = true;
+
+      const refNote = document.getElementById('missionReflection')?.value.trim() || '';
+      state.journal.unshift({
+        id: Date.now(),
+        date: new Date().toLocaleDateString(),
+        title: activeMission.title,
+        place: activeMission.city,
+        xp: earnedXp,
+        thumb: activeBase64,
+        note: refNote
+      });
+      if (state.journal.length > 20) state.journal.pop();
+
+      saveState();
+      triggerConfetti();
+      showXpFloat(earnedXp, document.getElementById('btnComplete'));
+      window.location.hash = '#/profile';
+    });
+
+    // ── PROFILE & DUOLINGO-STYLE GAMIFICATION ──
+    function updateProfileUI() {
+      let curr = LEVELS[0], next = LEVELS[1], currIdx = 0;
+      for (let i = 0; i < LEVELS.length; i++) {
+        if (state.xp >= LEVELS[i].xp) {
+          curr = LEVELS[i];
+          currIdx = i;
+          next = LEVELS[i + 1] || { xp: curr.xp + 1000 };
+        }
+      }
+      const pct = Math.min(100, Math.max(0, ((state.xp - curr.xp) / (next.xp - curr.xp)) * 100));
+
+      const avatarWrap = document.getElementById('pAvatarIcon');
+      if (avatarWrap) avatarWrap.innerHTML = getLevelSvg(currIdx);
+
+      document.getElementById('pLevelName').textContent = curr.name;
+      document.getElementById('pXp').textContent = state.xp;
+      document.getElementById('pTotalXpStat').textContent = state.xp;
+
+      setTimeout(() => {
+        document.getElementById('pXpBar').style.width = pct + '%';
+      }, 50);
+
+      document.getElementById('pStreak').textContent = state.streak;
+      document.getElementById('pTotal').textContent = state.missions;
+
+      Object.keys(state.badges).forEach(b => {
+        const el = document.getElementById(`b-${b}`);
+        if (el) {
+          el.classList.toggle('unlocked', state.badges[b]);
+          el.classList.toggle('locked', !state.badges[b]);
+        }
+      });
     }
-  });
 
-  // Init
-  router();
-  checkHealth();
-</script>
+    // ── JOURNAL & PREVIOUS PLANS MANAGEMENT ──
+    let currentJournalTab = 'plans';
+
+    window.switchJournalTab = function(tab) {
+      currentJournalTab = tab;
+      const tabPlans = document.getElementById('tabSavedPlans');
+      const tabExcursions = document.getElementById('tabCompletedExcursions');
+      const panePlans = document.getElementById('journalPlansPane');
+      const paneExcursions = document.getElementById('journalExcursionsPane');
+
+      if (tabPlans) tabPlans.classList.toggle('active', tab === 'plans');
+      if (tabExcursions) tabExcursions.classList.toggle('active', tab === 'excursions');
+      if (panePlans) panePlans.style.display = tab === 'plans' ? 'block' : 'none';
+      if (paneExcursions) paneExcursions.style.display = tab === 'excursions' ? 'block' : 'none';
+    };
+
+    function renderJournal() {
+      renderSavedPlans();
+      renderCompletedExcursions();
+    }
+
+    function renderSavedPlans() {
+      const list = document.getElementById('savedPlansList');
+      const empty = document.getElementById('savedPlansEmpty');
+      const countEl = document.getElementById('savedPlansCount');
+
+      state.savedPlans = state.savedPlans || [];
+      if (countEl) countEl.textContent = state.savedPlans.length;
+
+      if (state.savedPlans.length === 0) {
+        if (list) list.innerHTML = '';
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+
+      if (empty) empty.style.display = 'none';
+      if (!list) return;
+      list.innerHTML = '';
+
+      state.savedPlans.forEach(p => {
+        const m = p.mission || {};
+        const card = document.createElement('div');
+        card.className = 'saved-plan-card';
+
+        const best = m.best_destination;
+        const bestBadge = (best && best.name) ? `
+          <span class="chip" style="font-size: 11px; padding: 3px 8px; background: rgba(34, 197, 94, 0.15); color: var(--accent-primary); border-color: rgba(34, 197, 94, 0.3);">
+            ⭐ ${best.name} (${best.category || 'Spot'})
+          </span>
+        ` : '';
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">
+                ${p.date} ${p.time ? '· ' + p.time : ''} · <strong>${p.place || 'Excursion'}</strong>
+              </div>
+              <h3 style="font-size: 1.25rem; margin-bottom: 6px; color: var(--text-primary);">${m.title || 'Outdoor Mission'}</h3>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" onclick="openSavedMission(${p.id})" style="padding: 8px 16px; font-size: 13px;" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Open Mission
+              </button>
+              <button class="btn btn-secondary" onclick="deleteSavedPlan(${p.id})" style="padding: 8px 12px; font-size: 13px; color: var(--error);" title="Delete plan" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; font-size: 13px;">
+            <span class="chip" style="padding: 2px 8px; font-size: 12px; background: var(--bg-elevated);">${m.temperature_c ?? '--'}°C</span>
+            <span class="chip" style="padding: 2px 8px; font-size: 12px; background: var(--bg-elevated);">${m.duration_min || 30} min</span>
+            <span class="chip" style="padding: 2px 8px; font-size: 12px; background: var(--bg-elevated);">${(m.steps || []).length} Steps</span>
+            ${bestBadge}
+          </div>
+
+          <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; background: var(--bg-elevated); padding: 10px 14px; border-radius: var(--radius); border-left: 3px solid var(--accent-primary);">
+            <strong>Step 1:</strong> ${(m.steps && m.steps[0]) ? m.steps[0] : 'Head outside and explore.'}
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    window.openSavedMission = function(planId) {
+      state.savedPlans = state.savedPlans || [];
+      const item = state.savedPlans.find(p => p.id === planId);
+      if (!item || !item.mission) return;
+      activeMission = item.mission;
+      currentLat = item.lat || currentLat;
+      currentLon = item.lon || currentLon;
+      currentPlace = item.place || currentPlace;
+      setupMissionView();
+      window.location.hash = '#/mission';
+    };
+
+    window.deleteSavedPlan = function(planId) {
+      if (confirm("Delete this plan from your saved history?")) {
+        state.savedPlans = (state.savedPlans || []).filter(p => p.id !== planId);
+        saveState();
+        renderSavedPlans();
+      }
+    };
+
+    function renderCompletedExcursions() {
+      const timelineWrap = document.getElementById('journalTimelineWrap');
+      const timeline = document.getElementById('journalTimeline');
+      const empty = document.getElementById('journalEmpty');
+      const countEl = document.getElementById('completedCount');
+
+      state.journal = state.journal || [];
+      if (countEl) countEl.textContent = state.journal.length;
+
+      if (state.journal.length === 0) {
+        if (timelineWrap) timelineWrap.style.display = 'none';
+        if (empty) empty.style.display = 'block';
+      } else {
+        if (empty) empty.style.display = 'none';
+        if (timelineWrap) timelineWrap.style.display = 'block';
+        if (!timeline) return;
+        timeline.innerHTML = '';
+
+        state.journal.forEach(j => {
+          const item = document.createElement('div');
+          item.className = 'timeline-item';
+          item.innerHTML = `
+            <div class="timeline-marker"></div>
+            <div class="timeline-card">
+              <img class="j-thumb" src="${j.thumb || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%231C2620%22/></svg>'}" alt="Excursion thumb" />
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 2px;">${j.date} · ${j.place}</div>
+                <h4 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${j.title}">${j.title}</h4>
+                <div style="font-size: 14px; font-weight: 600; color: var(--accent-primary);">+${j.xp} XP Earned</div>
+                ${j.note ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; font-style: italic; background: rgba(0,0,0,0.25); padding: 5px 10px; border-radius: 4px; border-left: 2px solid var(--accent-primary);">"${j.note}"</div>` : ''}
+              </div>
+              <button class="btn btn-secondary" onclick="deleteJournal(${j.id})" title="Delete entry" aria-label="Delete entry" type="button" style="padding: 8px 12px; border-radius: var(--radius);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          `;
+          timeline.appendChild(item);
+        });
+      }
+    }
+
+    window.deleteJournal = function(id) {
+      if (confirm("Delete this excursion record?")) {
+        state.journal = state.journal.filter(j => j.id !== id);
+        saveState();
+        renderCompletedExcursions();
+        updateProfileUI();
+      }
+    };
+
+
+    document.getElementById('btnResetData').addEventListener('click', () => {
+      if (confirm("Reset all journey data? This will erase all XP, streaks, and journal history.")) {
+        localStorage.removeItem('tgb_v3_state');
+        location.reload();
+      }
+    });
+
+    // ── INITIALIZE ──
+    router();
+    checkHealth();
+    initForestChat();
+    updateWeatherFx();
+    setupVoiceDictation('btnVoiceNotes', 'customNotes', 'voiceNotesLabel');
+    setupVoiceDictation('btnVoiceReflection', 'missionReflection', 'voiceReflectionLabel');
+  </script>
 </body>
 </html>

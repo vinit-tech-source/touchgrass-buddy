@@ -1,5 +1,5 @@
 """
-weather.py — Geocoding, reverse geocoding, and weather fetching with robust retries.
+weather.py: Geocoding, reverse geocoding, and weather fetching with robust retries.
 """
 
 from __future__ import annotations
@@ -26,20 +26,20 @@ class WeatherInfo:
 
 def _describe_weather(temp_c: float, rain_pct: int, wind_kmh: float) -> str:
     parts: list[str] = []
-    if temp_c <= 0: parts.append("freezing cold ❄️")
-    elif temp_c <= 10: parts.append("quite chilly 🧥")
-    elif temp_c <= 20: parts.append("mild and pleasant 🌤️")
-    elif temp_c <= 30: parts.append("warm ☀️")
-    elif temp_c <= 38: parts.append("hot 🔥")
-    else: parts.append("extremely hot 🥵")
+    if temp_c <= 0: parts.append("freezing cold")
+    elif temp_c <= 10: parts.append("quite chilly")
+    elif temp_c <= 20: parts.append("mild and pleasant")
+    elif temp_c <= 30: parts.append("warm")
+    elif temp_c <= 38: parts.append("hot")
+    else: parts.append("extremely hot")
 
-    if rain_pct >= 70: parts.append("likely rainy 🌧️")
-    elif rain_pct >= 40: parts.append("chance of rain 🌦️")
+    if rain_pct >= 70: parts.append("likely rainy")
+    elif rain_pct >= 40: parts.append("chance of rain")
 
-    if wind_kmh >= 50: parts.append("very windy 💨")
-    elif wind_kmh >= 30: parts.append("breezy 🍃")
+    if wind_kmh >= 50: parts.append("very windy")
+    elif wind_kmh >= 30: parts.append("breezy")
 
-    return ", ".join(parts) if parts else "nice weather outside 🌿"
+    return ", ".join(parts) if parts else "mild and pleasant"
 
 
 @retry(
