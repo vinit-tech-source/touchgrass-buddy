@@ -1868,6 +1868,60 @@
       .saved-plans-grid {
         grid-template-columns: 1fr !important;
       }
+
+      /* Mission Action Bar & Bottom Cushion on Mobile */
+      #view-mission {
+        padding-bottom: 120px !important;
+      }
+      .mission-action-bar {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        margin-top: 24px !important;
+        margin-bottom: 40px !important;
+        position: relative !important;
+        z-index: 50 !important;
+      }
+      .mission-action-bar #btnComplete {
+        width: 100% !important;
+        min-height: 56px !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        touch-action: manipulation !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 18px var(--accent-glow) !important;
+      }
+      .mission-action-bar #btnAbandon {
+        width: 100% !important;
+        min-height: 48px !important;
+        font-size: 14px !important;
+        touch-action: manipulation !important;
+        cursor: pointer !important;
+      }
+    }
+
+    /* Desktop Mission Action Bar */
+    .mission-action-bar {
+      display: flex;
+      gap: 14px;
+      margin-top: 28px;
+      margin-bottom: 50px;
+      position: relative;
+      z-index: 20;
+    }
+    .mission-action-bar #btnComplete {
+      flex: 2;
+      min-height: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .mission-action-bar #btnAbandon {
+      flex: 1;
+      min-height: 50px;
+      touch-action: manipulation;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -2456,9 +2510,9 @@
         <input type="text" class="input" id="missionReflection" placeholder="Record what you felt, saw, heard, or discovered..." style="height: 44px; font-size: 14px;" />
       </div>
 
-      <div style="display: flex; gap: 14px; margin-top: 24px;">
-        <button class="btn btn-secondary" id="btnAbandon" style="flex: 1;" type="button">Back to Plan</button>
-        <button class="btn btn-primary" id="btnComplete" style="flex: 2;" type="button">Mark Complete</button>
+      <div class="mission-action-bar">
+        <button class="btn btn-primary" id="btnComplete" type="button">Mark Complete ✓</button>
+        <button class="btn btn-secondary" id="btnAbandon" type="button">Back to Plan</button>
       </div>
     </div>
   </section>
@@ -2894,7 +2948,29 @@
     }
 
     function saveState() {
-      localStorage.setItem('tgb_v3_state', JSON.stringify(state));
+      try {
+        localStorage.setItem('tgb_v3_state', JSON.stringify(state));
+      } catch (err) {
+        console.warn("Storage quota limit reached, pruning images to save space:", err);
+        if (state.journal && state.journal.length) {
+          state.journal.forEach((entry, idx) => {
+            if (idx > 0) entry.thumb = null;
+          });
+        }
+        if (state.savedPlans && state.savedPlans.length > 20) {
+          state.savedPlans = state.savedPlans.slice(0, 20);
+        }
+        try {
+          localStorage.setItem('tgb_v3_state', JSON.stringify(state));
+        } catch (_) {
+          if (state.journal) {
+            state.journal.forEach(entry => { entry.thumb = null; });
+          }
+          try {
+            localStorage.setItem('tgb_v3_state', JSON.stringify(state));
+          } catch (_) {}
+        }
+      }
     }
 
     // ── REGISTER PWA SERVICE WORKER ──
@@ -3248,8 +3324,14 @@
         if (!map) initMap();
         else setTimeout(() => { if (map) map.invalidateSize(); }, 150);
       }
-      if (target === 'mission' && missionMapObj) {
-        setTimeout(() => { if (missionMapObj) missionMapObj.invalidateSize(); }, 150);
+      if (target === 'mission') {
+        if (!activeMission && state.savedPlans && state.savedPlans.length > 0) {
+          activeMission = state.savedPlans[0].mission;
+          setupMissionView();
+        }
+        if (missionMapObj) {
+          setTimeout(() => { if (missionMapObj) missionMapObj.invalidateSize(); }, 150);
+        }
       }
       if (target === 'profile') updateProfileUI();
       if (target === 'journal') renderJournal();
@@ -3965,38 +4047,64 @@
       window.location.hash = '#/plan';
     });
 
-    document.getElementById('btnComplete').addEventListener('click', () => {
-      const today = new Date().toDateString();
-      if (state.lastPlayDate !== today) {
-        state.streak += 1;
-        state.lastPlayDate = today;
+    document.getElementById('btnComplete').addEventListener('click', (e) => {
+      if (e) e.preventDefault();
+      try {
+        // Ensure activeMission is defined; if not, recover from saved plans
+        if (!activeMission && state.savedPlans && state.savedPlans.length > 0) {
+          activeMission = state.savedPlans[0].mission;
+        }
+
+        const today = new Date().toDateString();
+        if (state.lastPlayDate !== today) {
+          state.streak = (state.streak || 0) + 1;
+          state.lastPlayDate = today;
+        }
+        state.missions = (state.missions || 0) + 1;
+        const earnedXp = activeVerified ? 150 : 100;
+        state.xp = (state.xp || 0) + earnedXp;
+
+        state.badges = state.badges || {};
+        if (!state.badges.first) state.badges.first = true;
+        if (!state.badges.streak3 && state.streak >= 3) state.badges.streak3 = true;
+        if (!state.badges.photo && activeVerified) state.badges.photo = true;
+        if (!state.badges.rain && activeMission && (activeMission.rain_chance || 0) > 40) state.badges.rain = true;
+        if (!state.badges.night && activeMission && activeMission.is_day === false) state.badges.night = true;
+
+        const refNote = document.getElementById('missionReflection')?.value.trim() || '';
+        const missionTitle = activeMission?.title || "Outdoor Excursion";
+        const missionPlace = activeMission?.city || currentPlace || "Local Park";
+
+        state.journal = state.journal || [];
+        state.journal.unshift({
+          id: Date.now(),
+          date: new Date().toLocaleDateString(),
+          title: missionTitle,
+          place: missionPlace,
+          xp: earnedXp,
+          thumb: activeBase64,
+          note: refNote
+        });
+        if (state.journal.length > 20) state.journal.pop();
+
+        saveState();
+
+        if (navigator.vibrate) {
+          try { navigator.vibrate([40, 60, 40]); } catch (_) {}
+        }
+        triggerConfetti();
+        const btnComp = document.getElementById('btnComplete');
+        showXpFloat(earnedXp, btnComp);
+
+        setTimeout(() => {
+          window.location.hash = '#/profile';
+          updateProfileUI();
+        }, 350);
+
+      } catch (err) {
+        console.error("Error completing mission:", err);
+        window.location.hash = '#/profile';
       }
-      state.missions += 1;
-      const earnedXp = activeVerified ? 150 : 100;
-      state.xp += 100;
-
-      if (!state.badges.first) state.badges.first = true;
-      if (!state.badges.streak3 && state.streak >= 3) state.badges.streak3 = true;
-      if (!state.badges.photo && activeVerified) state.badges.photo = true;
-      if (!state.badges.rain && activeMission.rain_chance > 40) state.badges.rain = true;
-      if (!state.badges.night && !activeMission.is_day) state.badges.night = true;
-
-      const refNote = document.getElementById('missionReflection')?.value.trim() || '';
-      state.journal.unshift({
-        id: Date.now(),
-        date: new Date().toLocaleDateString(),
-        title: activeMission.title,
-        place: activeMission.city,
-        xp: earnedXp,
-        thumb: activeBase64,
-        note: refNote
-      });
-      if (state.journal.length > 20) state.journal.pop();
-
-      saveState();
-      triggerConfetti();
-      showXpFloat(earnedXp, document.getElementById('btnComplete'));
-      window.location.hash = '#/profile';
     });
 
     // ── PROFILE & DUOLINGO-STYLE GAMIFICATION ──
