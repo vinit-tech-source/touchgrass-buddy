@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import asyncio
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -123,27 +124,33 @@ async def api_reverse_geocode(lat: float, lon: float):
 
 @app.post("/api/mission", response_model=MissionResponse)
 async def create_mission(req: MissionRequest) -> MissionResponse:
-    # 1. Fetch Weather (graceful fallback)
-    try:
-        weather = await get_weather(req.lat, req.lon)
-    except Exception:
-        weather = None
+    # 1. Fetch Weather and Places concurrently with safe timeouts
+    async def _fetch_weather():
+        try:
+            return await asyncio.wait_for(get_weather(req.lat, req.lon), timeout=3.5)
+        except Exception:
+            return None
 
-    # 2. Fetch Places and categorized spots (cafe, mountain, temple, fort, park)
-    try:
-        places_data = await get_categorized_places(
-            lat=req.lat,
-            lon=req.lon,
-            radius_km=req.radius_km,
-            place_label=req.place_label
-        )
-        places = places_data.get("all_places", [])
-        best_destination = places_data.get("best_destination")
-        categories = places_data.get("categories", {})
-    except Exception:
-        places = []
-        best_destination = None
-        categories = {}
+    async def _fetch_places():
+        try:
+            return await asyncio.wait_for(
+                get_categorized_places(
+                    lat=req.lat,
+                    lon=req.lon,
+                    radius_km=req.radius_km,
+                    place_label=req.place_label
+                ),
+                timeout=5.5
+            )
+        except Exception:
+            return {}
+
+    weather, places_data = await asyncio.gather(_fetch_weather(), _fetch_places())
+    if not isinstance(places_data, dict):
+        places_data = {}
+    places = places_data.get("all_places", [])
+    best_destination = places_data.get("best_destination")
+    categories = places_data.get("categories", {})
 
     # 3. Generate Mission with destination focus
     mission = await generate_mission(

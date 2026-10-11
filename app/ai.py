@@ -4,6 +4,7 @@ ai.py: Talk to a local Ollama LLM and get structured outdoor missions.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -160,8 +161,7 @@ def _extract_json(text: str) -> dict | None:
 
 
 @retry(
-    stop=stop_after_attempt(2),
-    wait=wait_exponential(multiplier=0.5, min=1, max=3),
+    stop=stop_after_attempt(1),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException))
 )
 async def _call_ollama(system_msg: str, user_msg: str, temperature: float = 0.6) -> str:
@@ -172,9 +172,9 @@ async def _call_ollama(system_msg: str, user_msg: str, temperature: float = 0.6)
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
-        "options": {"temperature": temperature, "num_predict": 512},
+        "options": {"temperature": temperature, "num_predict": 220},
     }
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=14.0) as client:
         resp = await client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
         resp.raise_for_status()
         return resp.json().get("message", {}).get("content", "")
@@ -198,7 +198,7 @@ async def generate_mission(
     )
     
     try:
-        raw = await _call_ollama(system_msg, user_msg, temperature=0.6)
+        raw = await asyncio.wait_for(_call_ollama(system_msg, user_msg, temperature=0.6), timeout=14.5)
         parsed = _extract_json(raw)
         if parsed and (valid := validate_mission(parsed)):
             valid["places"] = places
